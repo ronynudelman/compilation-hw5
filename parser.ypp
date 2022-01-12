@@ -3,6 +3,7 @@
 	#include "Tables.h"
 	#include "Types.h"
 	#include "hw3_output.hpp"
+	#include "bp.hpp"
 %}
 
 
@@ -45,7 +46,7 @@
 
 Program											:	{inside_while_counter = 0;}
 													Funcs
-													{check_main_exist(); close_scope();}
+													{check_main_exist(); close_scope(); code_buffer.printCodeBuffer();}
 ;
 
 Funcs											:	/*epsilon*/
@@ -67,7 +68,7 @@ FuncDecl										:	RetType
 													{close_scope();}
 ;
 
-RetType									:	Type
+RetType											:	Type
 													{$$ = new RetTypeCls($1->get_name());}
 												|	VOID
 													{$$ = new RetTypeCls("VOID");}
@@ -79,7 +80,7 @@ Formals											:	/*epsilon*/
 													{$$ = new FormalsCls($1->get_args_types(), $1->get_args_names());}
 ;
 
-FormalsList									:	FormalDecl
+FormalsList										:	FormalDecl
 													{$$ = new FormalsListCls(); $$->add_new_func_arg($1);}
 												|	FormalDecl
 													COMMA
@@ -87,7 +88,7 @@ FormalsList									:	FormalDecl
 													{$$ = new FormalsListCls($3->get_args_types(),$3->get_args_names()); $$->add_new_func_arg($1); }
 ;
 
-FormalDecl							:	TypeAnnotation
+FormalDecl										:	TypeAnnotation
 													Type
 													ID
 													{$$ = new FormalDeclCls($1->get_is_const(), $2->get_name(), $3->get_name());}
@@ -154,7 +155,7 @@ Statement										:	LBRACE
 													{check_legal_continue();}
 ;
 
-IfElse									: /* epsilon */
+IfElse											: /* epsilon */
 													// we picked up a random token with lower priority compared
 													// to ELSE, to solve shift-reduce conflict
 													%prec ASSIGN
@@ -183,7 +184,7 @@ ExpList											:	Exp
 													{$$ = new ExpListCls($3->get_args_types()); $$->add_new_func_arg($1);}
 ;
 
-Type										:	INT
+Type											:	INT
 													{$$ = new TypeCls("INT");}
 												|	BYTE
 													{$$ = new TypeCls("BYTE");}
@@ -191,7 +192,7 @@ Type										:	INT
 													{$$ = new TypeCls("BOOL");}
 ;
 
-TypeAnnotation					:	/*epsilon*/
+TypeAnnotation									:	/*epsilon*/
 													{$$ = new TypeAnnotationCls(false);}
 												|	CONST
 													{$$ = new TypeAnnotationCls(true);}
@@ -200,7 +201,7 @@ TypeAnnotation					:	/*epsilon*/
 Exp												:	LPAREN
 													Exp
 													RPAREN
-													{$$ = new ExpCls($2->get_type(), $2->get_value());}
+													{$$ = new ExpCls($2->get_type(), $2->get_value(), LPAREN_EXP_RPAREN, $2);}
 												|	Exp
 													BINOP_MUL
 													Exp

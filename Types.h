@@ -5,6 +5,14 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include "Register.h"
+#include "bp.hpp"
+
+
+enum OPERATION_TYPE {
+    NONE,
+    LPAREN_EXP_RPAREN
+};
 
 
 class AbsCls {
@@ -17,6 +25,10 @@ public:
   virtual bool get_is_const() { std::cerr << "6 Unexpected error" << std::endl; exit(1); return true; }
   virtual int get_yylineno() { std::cerr << "7 Unexpected error" << std::endl; exit(1); return 0; }
   virtual std::string get_value() { std::cerr << "8 Unexpected error" << std::endl; exit(1); return std::string(); }
+  virtual std::string get_reg() { std::cerr << "9 Unexpected error" << std::endl; exit(1); return std::string(); }
+  virtual std::vector<pair<int,BranchLabelIndex>> get_truelist() { std::cerr << "10 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
+  virtual std::vector<pair<int,BranchLabelIndex>> get_falselist() { std::cerr << "11 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
+  virtual std::vector<pair<int,BranchLabelIndex>> get_nextlist() { std::cerr << "12 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual ~AbsCls() = default;
 };
 
@@ -99,11 +111,19 @@ public:
 class ExpCls : public AbsCls {
 private:
 	std::string type;
-  std::string value;
+    std::string value;
+    Register reg;
+    std::vector<pair<int,BranchLabelIndex>> truelist;
+    std::vector<pair<int,BranchLabelIndex>> falselist;
+    std::vector<pair<int,BranchLabelIndex>> nextlist;
 public:
-	ExpCls(std::string type, std::string value = std::string("0"));
+    ExpCls(std::string type, std::string value = std::string("0"), OPERATION_TYPE op = NONE, AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr);
 	std::string get_type() override { return type; }
-  std::string get_value() override { return value; }
+    std::string get_value() override { return value; }
+    std::string get_reg() override { return reg.get_name(); }
+    std::vector<pair<int,BranchLabelIndex>> get_truelist() override { return truelist; }
+    std::vector<pair<int,BranchLabelIndex>> get_falselist() override { return falselist; }
+    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
 
 

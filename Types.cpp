@@ -1,5 +1,6 @@
 #include <string>
 #include "Types.h"
+#include "Utilities.h"
 
 
 FormalDeclCls::FormalDeclCls(bool is_const, std::string type, std::string name) : is_const(is_const),
@@ -40,7 +41,27 @@ IDCls::IDCls(std::string name, int line_num) : name(name), line_num(line_num) {}
 TypeAnnotationCls::TypeAnnotationCls(bool is_const) : is_const(is_const) {}
 
 
-ExpCls::ExpCls(std::string type, std::string value) : type(type), value(value) {}
+ExpCls::ExpCls(std::string type, std::string value, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2) : type(type),
+                                                                                                     value(value),
+                                                                                                     reg(Register()),
+                                                                                                     truelist(std::vector<pair<int,BranchLabelIndex>>()),
+                                                                                                     falselist(std::vector<pair<int,BranchLabelIndex>>()),
+                                                                                                     nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+    std::string code;
+    switch (op) {
+        case LPAREN_EXP_RPAREN:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+            code_buffer.emit(code);
+            truelist = cls1->get_truelist();
+            falselist = cls1->get_falselist();
+            nextlist = cls1->get_nextlist();
+            break;
+        default:
+            std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
+            break;
+    }
+
+}
 
 
 CallCls::CallCls(std::string type) : type(type) {}

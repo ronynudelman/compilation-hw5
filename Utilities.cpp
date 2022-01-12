@@ -4,11 +4,13 @@
 #include "Utilities.h"
 #include "Tables.h"
 #include "hw3_output.hpp"
+#include "bp.hpp"
 
 
 SymbolTableStack symbol_table_stack;
 OffsetTableStack offset_table_stack;
 int inside_while_counter;
+CodeBuffer& code_buffer = CodeBuffer::instance();
 
 
 static bool is_type_starts_with_const(const std::string& type);
@@ -39,6 +41,23 @@ static void check_func_args(std::vector<std::string>& args_names) {
 			output::errorDef(yylineno, *it);
 			exit(1);
 		}
+	}
+}
+
+
+std::string size_by_type(std::string type) {
+	if (type.find("INT") != std::string::npos) {
+		return "i32";
+	}
+	else if (type.find("BOOL") != std::string::npos) {
+		return "i1";
+	}
+	else if (type.find("BYTE") != std::string::npos) {
+		return "i8";
+	}
+	else {
+		std::cerr << "TYPE ERROR" << std::endl;
+		return "i0";
 	}
 }
 

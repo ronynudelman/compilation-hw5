@@ -10,7 +10,10 @@
 extern SymbolTableStack symbol_table_stack;
 extern OffsetTableStack offset_table_stack;
 extern int inside_while_counter;
+extern CodeBuffer& code_buffer;
 
+
+std::string size_by_type(std::string type);
 std::string strip_const(std::string type);
 std::vector<std::string> strip_const(std::vector<std::string> types);
 void check_main_exist();
