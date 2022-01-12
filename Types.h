@@ -12,7 +12,8 @@
 enum OPERATION_TYPE {
     NONE,
     LPAREN_EXP_RPAREN,
-    EXP_BINOP_MUL_EXP
+    EXP_BINOP_MUL_EXP,
+    EXP_BINOP_ADD_EXP
 };
 
 
@@ -167,6 +168,15 @@ private:
   std::string value;
 public:
   BinopMulCls(std::string value);
+  std::string get_value() override { return value; }
+};
+
+
+class BinopAddCls : public AbsCls {
+private:
+  std::string value;
+public:
+  BinopAddCls(std::string value);
   std::string get_value() override { return value; }
 };
 

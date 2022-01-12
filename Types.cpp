@@ -73,6 +73,18 @@ ExpCls::ExpCls(std::string type,
             falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
             nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
             break;
+        case EXP_BINOP_ADD_EXP:
+            if (cls3->get_value() == "+") {
+                code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            else {
+                code = reg.get_name() + " = sub " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            code_buffer.emit(code);
+            truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
+            falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
+            nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
+            break;
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
             break;
@@ -96,3 +108,6 @@ NumCls::NumCls(std::string value) : value(value) {}
 
 
 BinopMulCls::BinopMulCls(std::string value) : value(value) {}
+
+
+BinopAddCls::BinopAddCls(std::string value) : value(value) {}

@@ -209,7 +209,7 @@ Exp												:	LPAREN
 												|	Exp
 													BINOP_ADD
 													Exp
-													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()));}
+													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_BINOP_ADD_EXP, $1, $3, $2);}
 												|	ID
 													{$$ = new ExpCls(get_id_type($1->get_name()));}
 												|	Call
