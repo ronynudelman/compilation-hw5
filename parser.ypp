@@ -1,0 +1,265 @@
+%{
+	#include "Utilities.h"
+	#include "Tables.h"
+	#include "Types.h"
+	#include "hw3_output.hpp"
+%}
+
+
+%token VOID
+%token INT
+%token BYTE
+%token B
+%token BOOL
+%token CONST
+%token TRUE
+%token FALSE
+%token RETURN
+%token IF
+%token WHILE
+%token BREAK
+%token CONTINUE
+%token SC
+%token COMMA
+%token ID
+%token NUM
+%token STRING
+
+%right ASSIGN
+%left OR
+%left AND
+%left RELOP_EQUAL
+%nonassoc RELOP_COMPARE
+%left BINOP_ADD
+%left BINOP_MUL
+%right NOT
+%left LPAREN
+%left RPAREN
+%left LBRACE
+%left RBRACE
+%nonassoc ELSE
+
+
+%%
+
+
+Program											:	{inside_while_counter = 0;}
+													Funcs
+													{check_main_exist(); close_scope();}
+;
+
+Funcs											:	/*epsilon*/
+														{if (yychar != YYEOF) yyerror("not EOF");}
+												|	FuncDecl
+													Funcs
+;
+
+FuncDecl										:	RetType
+													ID
+													LPAREN
+													Formals
+													RPAREN
+													{add_func_to_symbol_table($2->get_name(), $1->get_name(), $4->get_args_types(), $2->get_yylineno());}
+													LBRACE
+													{open_scope(); add_func_args_to_symbol_table($4->get_args_types(), $4->get_args_names());}
+													Statements
+													RBRACE
+													{close_scope();}
+;
+
+RetType									:	Type
+													{$$ = new RetTypeCls($1->get_name());}
+												|	VOID
+													{$$ = new RetTypeCls("VOID");}
+;
+
+Formals											:	/*epsilon*/
+													{$$ = new FormalsCls();}
+												|	FormalsList
+													{$$ = new FormalsCls($1->get_args_types(), $1->get_args_names());}
+;
+
+FormalsList									:	FormalDecl
+													{$$ = new FormalsListCls(); $$->add_new_func_arg($1);}
+												|	FormalDecl
+													COMMA
+													FormalsList
+													{$$ = new FormalsListCls($3->get_args_types(),$3->get_args_names()); $$->add_new_func_arg($1); }
+;
+
+FormalDecl							:	TypeAnnotation
+													Type
+													ID
+													{$$ = new FormalDeclCls($1->get_is_const(), $2->get_name(), $3->get_name());}
+;
+
+Statements										:	Statement
+												|	Statements
+													Statement
+;
+
+Statement										:	LBRACE
+													{open_scope();}
+													Statements
+													RBRACE
+													{close_scope();}
+												|	TypeAnnotation
+													Type
+													ID
+													SC
+													{check_assign_to_const($1->get_is_const()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name());}
+												|	TypeAnnotation
+													Type
+													ID
+													ASSIGN
+													Exp
+													SC
+													{check_valid_types_for_assign($2->get_name(), $5->get_type()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name());}
+												|	ID
+													ASSIGN
+													Exp
+													SC
+													{check_var_valid_for_assign($1->get_name()); std::string& id_type = get_id_type($1->get_name()); check_valid_types_for_assign(id_type, $3->get_type());}
+												|	Call
+													SC
+												|	RETURN
+													SC
+													{check_valid_ret_type("VOID");}
+												|	RETURN
+													Exp
+													SC
+													{assert_not_void($2->get_type()); check_valid_ret_type($2->get_type());}
+												|	IF
+													{open_scope();}
+													LPAREN
+													Exp
+													{check_matching_types("BOOL", $4->get_type());}
+													RPAREN
+													Statement
+													{close_scope();}
+													IfElse
+												|	WHILE
+													{inside_while_counter++; open_scope();}
+													LPAREN
+													Exp
+													{check_matching_types("BOOL", $4->get_type());}
+													RPAREN
+													Statement
+													{close_scope(); inside_while_counter--;}
+												|	BREAK
+													SC
+													{check_legal_break();}
+												|	CONTINUE
+													SC
+													{check_legal_continue();}
+;
+
+IfElse									: /* epsilon */
+													// we picked up a random token with lower priority compared
+													// to ELSE, to solve shift-reduce conflict
+													%prec ASSIGN
+												| ELSE
+													{open_scope();}
+													Statement
+													{close_scope();}
+;
+
+Call											:	ID
+													LPAREN
+													ExpList
+													RPAREN
+													{std::string& func_ret_type = check_valid_func_call($1->get_name(), $3->get_args_types()); $$ = new CallCls(func_ret_type);}
+												|	ID
+													LPAREN
+													RPAREN
+													{std::string& func_ret_type = check_valid_func_call($1->get_name()); $$ = new CallCls(func_ret_type);}
+;
+
+ExpList											:	Exp
+													{$$ = new ExpListCls(); $$->add_new_func_arg($1);}
+												|	Exp
+													COMMA
+													ExpList
+													{$$ = new ExpListCls($3->get_args_types()); $$->add_new_func_arg($1);}
+;
+
+Type										:	INT
+													{$$ = new TypeCls("INT");}
+												|	BYTE
+													{$$ = new TypeCls("BYTE");}
+												|	BOOL
+													{$$ = new TypeCls("BOOL");}
+;
+
+TypeAnnotation					:	/*epsilon*/
+													{$$ = new TypeAnnotationCls(false);}
+												|	CONST
+													{$$ = new TypeAnnotationCls(true);}
+;
+
+Exp												:	LPAREN
+													Exp
+													RPAREN
+													{$$ = new ExpCls($2->get_type(), $2->get_value());}
+												|	Exp
+													BINOP_MUL
+													Exp
+													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()));}
+												|	Exp
+													BINOP_ADD
+													Exp
+													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()));}
+												|	ID
+													{$$ = new ExpCls(get_id_type($1->get_name()));}
+												|	Call
+													{$$ = new ExpCls($1->get_type());}
+												|	NUM
+													{$$ = new ExpCls("INT", $1->get_value());}
+												|	NUM
+													B
+													{check_byte_range($1->get_value()); $$ = new ExpCls("BYTE", $1->get_value());}
+												|	STRING
+													{$$ = new ExpCls("STRING");}
+												|	TRUE
+													{$$ = new ExpCls("BOOL");}
+												|	FALSE
+													{$$ = new ExpCls("BOOL");}
+												|	NOT
+													Exp
+													{check_matching_types("BOOL", $2->get_type()); $$ = new ExpCls("BOOL");}
+												|	Exp
+													AND
+													Exp
+													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $3->get_type()); $$ = new ExpCls("BOOL");}
+												|	Exp
+													OR
+													Exp
+													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $3->get_type()); $$ = new ExpCls("BOOL");}
+												|	Exp
+													RELOP_COMPARE
+													Exp
+													{handle_relop_exp($1->get_type(), $3->get_type()); $$ = new ExpCls("BOOL");}
+												|	Exp
+													RELOP_EQUAL
+													Exp
+													{handle_relop_exp($1->get_type(), $3->get_type()); $$ = new ExpCls("BOOL");}
+												|	LPAREN
+													Type
+													RPAREN
+													Exp
+													{handle_cast_exp($2->get_name(), $4->get_type(), $4->get_value()); $$ = new ExpCls($2->get_name());}
+;
+
+
+%%
+
+
+void yyerror(const char* input) {
+	output::errorSyn(yylineno);
+	exit(1);
+}
+
+
+int main() {
+	return yyparse();
+}
