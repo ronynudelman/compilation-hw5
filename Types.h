@@ -11,7 +11,8 @@
 
 enum OPERATION_TYPE {
     NONE,
-    LPAREN_EXP_RPAREN
+    LPAREN_EXP_RPAREN,
+    EXP_BINOP_MUL_EXP
 };
 
 
@@ -117,7 +118,12 @@ private:
     std::vector<pair<int,BranchLabelIndex>> falselist;
     std::vector<pair<int,BranchLabelIndex>> nextlist;
 public:
-    ExpCls(std::string type, std::string value = std::string("0"), OPERATION_TYPE op = NONE, AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr);
+    ExpCls(std::string type,
+           std::string value = std::string("0"),
+           OPERATION_TYPE op = NONE,
+           AbsCls* cls1 = nullptr,
+           AbsCls* cls2 = nullptr,
+           AbsCls* cls3 = nullptr);
 	std::string get_type() override { return type; }
     std::string get_value() override { return value; }
     std::string get_reg() override { return reg.get_name(); }
@@ -152,6 +158,15 @@ private:
   std::string value;
 public:
   NumCls(std::string value);
+  std::string get_value() override { return value; }
+};
+
+
+class BinopMulCls : public AbsCls {
+private:
+  std::string value;
+public:
+  BinopMulCls(std::string value);
   std::string get_value() override { return value; }
 };
 

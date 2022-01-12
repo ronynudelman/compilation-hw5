@@ -41,12 +41,17 @@ IDCls::IDCls(std::string name, int line_num) : name(name), line_num(line_num) {}
 TypeAnnotationCls::TypeAnnotationCls(bool is_const) : is_const(is_const) {}
 
 
-ExpCls::ExpCls(std::string type, std::string value, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2) : type(type),
-                                                                                                     value(value),
-                                                                                                     reg(Register()),
-                                                                                                     truelist(std::vector<pair<int,BranchLabelIndex>>()),
-                                                                                                     falselist(std::vector<pair<int,BranchLabelIndex>>()),
-                                                                                                     nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+ExpCls::ExpCls(std::string type,
+               std::string value,
+               OPERATION_TYPE op,
+               AbsCls* cls1,
+               AbsCls* cls2,
+               AbsCls* cls3) : type(type),
+                               value(value),
+                               reg(Register()),
+                               truelist(std::vector<pair<int,BranchLabelIndex>>()),
+                               falselist(std::vector<pair<int,BranchLabelIndex>>()),
+                               nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     switch (op) {
         case LPAREN_EXP_RPAREN:
@@ -55,6 +60,18 @@ ExpCls::ExpCls(std::string type, std::string value, OPERATION_TYPE op, AbsCls* c
             truelist = cls1->get_truelist();
             falselist = cls1->get_falselist();
             nextlist = cls1->get_nextlist();
+            break;
+        case EXP_BINOP_MUL_EXP:
+            if (cls3->get_value() == "*") {
+                code = reg.get_name() + " = mul " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            else {
+                code = reg.get_name() + " = sdiv " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            code_buffer.emit(code);
+            truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
+            falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
+            nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
             break;
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
@@ -76,3 +93,6 @@ void ExpListCls::add_new_func_arg(AbsCls* exp_new_type) {
 
 
 NumCls::NumCls(std::string value) : value(value) {}
+
+
+BinopMulCls::BinopMulCls(std::string value) : value(value) {}

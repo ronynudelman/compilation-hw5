@@ -37,7 +37,7 @@ continue                                      return CONTINUE;
 =                                             return ASSIGN;
 \<|\>|\<\=|\>\=                               return RELOP_COMPARE;
 ==|!=                                         return RELOP_EQUAL;
-[\*\/]                                    	  return BINOP_MUL;
+[\*\/]                                    	  yylval = new BinopMulCls(yytext); return BINOP_MUL;
 [\+\-]                                        return BINOP_ADD;
 [a-zA-Z][a-zA-Z0-9]*                          yylval = new IDCls(yytext, yylineno); return ID;
 0|[1-9][0-9]*                                 yylval = new NumCls(yytext); return NUM;
