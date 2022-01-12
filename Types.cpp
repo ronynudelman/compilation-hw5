@@ -1,6 +1,8 @@
 #include <string>
 #include "Types.h"
 #include "Utilities.h"
+#include "Register.h"
+#include "StringGen.h"
 
 
 FormalDeclCls::FormalDeclCls(bool is_const, std::string type, std::string name) : is_const(is_const),
@@ -53,6 +55,7 @@ ExpCls::ExpCls(std::string type,
                                falselist(std::vector<pair<int,BranchLabelIndex>>()),
                                nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
+    std::string global_code;
     switch (op) {
         case EXP_TO_LPAREN_EXP_RPAREN:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
@@ -89,6 +92,24 @@ ExpCls::ExpCls(std::string type,
             code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
             code_buffer.emit(code);
             break;
+        case EXP_TO_NUM_B:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
+            code_buffer.emit(code);
+            break;
+        case EXP_TO_STRING:
+            global_code = "@." + cls1->get_str_gen_name() + " = internal constant [" + cls1->get_size() + " x i8] c\"" + cls1->get_value() + "\\00\"";
+            code = reg.get_name() + " = getelementptr ([" + cls1->get_size() + " x i8], [" + cls1->get_size() + " x i8]* @." + cls1->get_str_gen_name() + ", i32 0, i32 0)";
+            code_buffer.emitGlobal(global_code);
+            code_buffer.emit(code);
+            break;
+        case EXP_TO_TRUE:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + "1" + ", 0";
+            code_buffer.emit(code);
+            break;
+        case EXP_TO_FALSE:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + "0" + ", 0";
+            code_buffer.emit(code);
+            break;
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
             break;
@@ -115,3 +136,9 @@ BinopMulCls::BinopMulCls(std::string value) : value(value) {}
 
 
 BinopAddCls::BinopAddCls(std::string value) : value(value) {}
+
+
+StringCls::StringCls(std::string value) : str_gen(StringGen()), value(value), size(std::to_string(value.size())) {
+    this->value = this->value.substr(1, this->value.size() - 2);
+    this->size = std::to_string(this->value.size());
+}

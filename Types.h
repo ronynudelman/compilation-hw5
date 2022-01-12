@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include "Register.h"
+#include "StringGen.h"
 #include "bp.hpp"
 
 
@@ -14,7 +15,11 @@ enum OPERATION_TYPE {
     EXP_TO_LPAREN_EXP_RPAREN,
     EXP_TO_EXP_BINOP_MUL_EXP,
     EXP_TO_EXP_BINOP_ADD_EXP,
-    EXP_TO_NUM
+    EXP_TO_NUM,
+    EXP_TO_NUM_B,
+    EXP_TO_STRING,
+    EXP_TO_TRUE,
+    EXP_TO_FALSE
 };
 
 
@@ -32,6 +37,8 @@ public:
   virtual std::vector<pair<int,BranchLabelIndex>> get_truelist() { std::cerr << "10 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual std::vector<pair<int,BranchLabelIndex>> get_falselist() { std::cerr << "11 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual std::vector<pair<int,BranchLabelIndex>> get_nextlist() { std::cerr << "12 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
+  virtual std::string get_str_gen_name() { std::cerr << "13 Unexpected error" << std::endl; exit(1); return std::string(); }
+  virtual std::string get_size() { std::cerr << "14 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual ~AbsCls() = default;
 };
 
@@ -179,6 +186,19 @@ private:
 public:
   BinopAddCls(std::string value);
   std::string get_value() override { return value; }
+};
+
+
+class StringCls : public AbsCls {
+private:
+    StringGen str_gen;
+    std::string value;
+    std::string size;
+public:
+  StringCls(std::string value);
+  std::string get_str_gen_name() override { return str_gen.get_name(); }
+  std::string get_value() override { return value; }
+  std::string get_size() override { return size; }
 };
 
 

@@ -41,7 +41,7 @@ continue                                      return CONTINUE;
 [\+\-]                                        yylval = new BinopAddCls(yytext); return BINOP_ADD;
 [a-zA-Z][a-zA-Z0-9]*                          yylval = new IDCls(yytext, yylineno); return ID;
 0|[1-9][0-9]*                                 yylval = new NumCls(yytext); return NUM;
-\"([^\n\r\"\\]|\\[rnt"\\])+\"			            return STRING;
+\"([^\n\r\"\\]|\\[rnt"\\])+\"			      yylval = new StringCls(yytext); return STRING;
 
 \/\/[^\r\n]*[ \r|\n|\r\n]?                    ;
 {whitespace}                                  ;

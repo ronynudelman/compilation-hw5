@@ -46,7 +46,7 @@
 
 Program											:	{inside_while_counter = 0;}
 													Funcs
-													{check_main_exist(); close_scope(); code_buffer.printCodeBuffer();}
+													{check_main_exist(); close_scope(); code_buffer.printGlobalBuffer(); code_buffer.printCodeBuffer();}
 ;
 
 Funcs											:	/*epsilon*/
@@ -218,13 +218,13 @@ Exp												:	LPAREN
 													{$$ = new ExpCls("INT", $1->get_value(), EXP_TO_NUM);}
 												|	NUM
 													B
-													{check_byte_range($1->get_value()); $$ = new ExpCls("BYTE", $1->get_value());}
+													{check_byte_range($1->get_value()); $$ = new ExpCls("BYTE", $1->get_value(), EXP_TO_NUM_B);}
 												|	STRING
-													{$$ = new ExpCls("STRING");}
+													{$$ = new ExpCls("STRING", $1->get_value(), EXP_TO_STRING, $1);}
 												|	TRUE
-													{$$ = new ExpCls("BOOL");}
+													{$$ = new ExpCls("BOOL", std::string("0"), EXP_TO_TRUE);}
 												|	FALSE
-													{$$ = new ExpCls("BOOL");}
+													{$$ = new ExpCls("BOOL", std::string("0"), EXP_TO_FALSE);}
 												|	NOT
 													Exp
 													{check_matching_types("BOOL", $2->get_type()); $$ = new ExpCls("BOOL");}
