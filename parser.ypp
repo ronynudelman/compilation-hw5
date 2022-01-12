@@ -227,7 +227,7 @@ Exp												:	LPAREN
 													{$$ = new ExpCls("BOOL", std::string("0"), EXP_TO_FALSE);}
 												|	NOT
 													Exp
-													{check_matching_types("BOOL", $2->get_type()); $$ = new ExpCls("BOOL");}
+													{check_matching_types("BOOL", $2->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_NOT_EXP, $2);}
 												|	Exp
 													AND
 													Exp

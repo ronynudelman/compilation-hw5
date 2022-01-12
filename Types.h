@@ -19,7 +19,8 @@ enum OPERATION_TYPE {
     EXP_TO_NUM_B,
     EXP_TO_STRING,
     EXP_TO_TRUE,
-    EXP_TO_FALSE
+    EXP_TO_FALSE,
+    EXP_TO_NOT_EXP
 };
 
 

@@ -56,6 +56,8 @@ ExpCls::ExpCls(std::string type,
                                nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
+    int emit_result;
+    pair<int, BranchLabelIndex> list_item;
     switch (op) {
         case EXP_TO_LPAREN_EXP_RPAREN:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
@@ -105,10 +107,22 @@ ExpCls::ExpCls(std::string type,
         case EXP_TO_TRUE:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + "1" + ", 0";
             code_buffer.emit(code);
+            emit_result = code_buffer.emit("br labal @");
+            list_item.first = emit_result;
+            list_item.second = FIRST;
+            truelist = CodeBuffer::makelist(list_item);
             break;
         case EXP_TO_FALSE:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + "0" + ", 0";
             code_buffer.emit(code);
+            emit_result = code_buffer.emit("br labal @");
+            list_item.first = emit_result;
+            list_item.second = FIRST;
+            falselist = CodeBuffer::makelist(list_item);
+            break;
+        case EXP_TO_NOT_EXP:
+            code_buffer.emit(code);
+            // TODO - need to complete
             break;
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
