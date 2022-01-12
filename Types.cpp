@@ -54,14 +54,14 @@ ExpCls::ExpCls(std::string type,
                                nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     switch (op) {
-        case LPAREN_EXP_RPAREN:
+        case EXP_TO_LPAREN_EXP_RPAREN:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
             code_buffer.emit(code);
             truelist = cls1->get_truelist();
             falselist = cls1->get_falselist();
             nextlist = cls1->get_nextlist();
             break;
-        case EXP_BINOP_MUL_EXP:
+        case EXP_TO_EXP_BINOP_MUL_EXP:
             if (cls3->get_value() == "*") {
                 code = reg.get_name() + " = mul " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
@@ -73,7 +73,7 @@ ExpCls::ExpCls(std::string type,
             falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
             nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
             break;
-        case EXP_BINOP_ADD_EXP:
+        case EXP_TO_EXP_BINOP_ADD_EXP:
             if (cls3->get_value() == "+") {
                 code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
@@ -84,6 +84,10 @@ ExpCls::ExpCls(std::string type,
             truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
             falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
             nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
+            break;
+        case EXP_TO_NUM:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
+            code_buffer.emit(code);
             break;
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;

@@ -201,21 +201,21 @@ TypeAnnotation									:	/*epsilon*/
 Exp												:	LPAREN
 													Exp
 													RPAREN
-													{$$ = new ExpCls($2->get_type(), $2->get_value(), LPAREN_EXP_RPAREN, $2);}
+													{$$ = new ExpCls($2->get_type(), $2->get_value(), EXP_TO_LPAREN_EXP_RPAREN, $2);}
 												|	Exp
 													BINOP_MUL
 													Exp
-													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_BINOP_MUL_EXP, $1, $3, $2);}
+													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_TO_EXP_BINOP_MUL_EXP, $1, $3, $2);}
 												|	Exp
 													BINOP_ADD
 													Exp
-													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_BINOP_ADD_EXP, $1, $3, $2);}
+													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_TO_EXP_BINOP_ADD_EXP, $1, $3, $2);}
 												|	ID
-													{$$ = new ExpCls(get_id_type($1->get_name()));}
+													{$$ = new ExpCls(get_id_type($1->get_name()));}		// TODO - do we need to do something here?
 												|	Call
-													{$$ = new ExpCls($1->get_type());}
+													{$$ = new ExpCls($1->get_type());}					// TODO - we are afraid
 												|	NUM
-													{$$ = new ExpCls("INT", $1->get_value());}
+													{$$ = new ExpCls("INT", $1->get_value(), EXP_TO_NUM);}
 												|	NUM
 													B
 													{check_byte_range($1->get_value()); $$ = new ExpCls("BYTE", $1->get_value());}
