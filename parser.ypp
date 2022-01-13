@@ -108,14 +108,14 @@ Statement										:	LBRACE
 													Type
 													ID
 													SC
-													{check_assign_to_const($1->get_is_const()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name()); $$ = new StatementCls(STATEMENT_TO_TYPE_ID, $2);}
+													{check_assign_to_const($1->get_is_const()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name()); $$ = new StatementCls(STATEMENT_TO_TYPE_ID);}
 												|	TypeAnnotation
 													Type
 													ID
 													ASSIGN
 													Exp
 													SC
-													{check_valid_types_for_assign($2->get_name(), $5->get_type()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name());}
+													{check_valid_types_for_assign($2->get_name(), $5->get_type()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name()); $$ = new StatementCls(STATEMENT_TO_TYPE_ID_EXP, $1, $5);}
 												|	ID
 													ASSIGN
 													Exp

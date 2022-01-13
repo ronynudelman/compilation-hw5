@@ -96,11 +96,14 @@ ExpCls::ExpCls(std::string type,
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_NUM) {
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
+        code = reg.get_name() + " = add i32 " + value + ", 0";
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_NUM_B) {
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
+        Register temp_reg;
+        code = temp_reg.get_name() + " = zext i8 " + value + " to i32";
+        code_buffer.emit(code);
+        code = reg.get_name() + " = add i32 " + temp_reg.get_name() + ", 0";
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_STRING) {
@@ -111,7 +114,7 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_TRUE) {
         pair<int, BranchLabelIndex> list_item;
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + "1" + ", 0";
+        code = reg.get_name() + " = add i32 1, 0";
         code_buffer.emit(code);
         int emit_result = code_buffer.emit("br labal @");
         list_item.first = emit_result;
@@ -120,7 +123,7 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_FALSE) {
         pair<int, BranchLabelIndex> list_item;
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + "0" + ", 0";
+        code = reg.get_name() + " = add i32 0, 0";
         code_buffer.emit(code);
         int emit_result = code_buffer.emit("br labal @");
         list_item.first = emit_result;
@@ -231,9 +234,15 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     std::string global_code;
     Register reg;
     if (op == STATEMENT_TO_TYPE_ID) {
-        code = reg.get_name() + " = alloca " + size_by_type(cls1->get_name());
+        code = reg.get_name() + " = alloca i32";
         code_buffer.emit(code);
-        code = "store " + size_by_type(cls1->get_name()) + " 0, " + size_by_type(cls1->get_name()) + "* " + reg.get_name();
+        code = "store i32 0, i32* " + reg.get_name();
+        code_buffer.emit(code);
+    }
+    else if (op == STATEMENT_TO_TYPE_ID_EXP) { //TODO - deal with case CONST
+        code = reg.get_name() + " = alloca i32";
+        code_buffer.emit(code);
+        code = "store i32 " + cls2->get_reg() + ", i32* " + reg.get_name();
         code_buffer.emit(code);
     }
     else if (op == STATEMETN_TO_IF) {
