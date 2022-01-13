@@ -56,6 +56,8 @@ ExpCls::ExpCls(std::string type,
                                nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
+    Register temp_reg1;
+    std::string id_offset;
     int emit_result;
     pair<int, BranchLabelIndex> list_item;
     switch (op) {
@@ -89,6 +91,13 @@ ExpCls::ExpCls(std::string type,
             truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
             falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
             nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
+            break;
+        case EXP_TO_ID:
+            id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code = temp_reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code_buffer.emit(code);
+            code = reg.get_name() + " = load i32, i32* " + temp_reg1.get_name();
+            code_buffer.emit(code);
             break;
         case EXP_TO_NUM:
             code = reg.get_name() + " = add " + size_by_type(type) + " " + value + ", 0";
@@ -136,20 +145,48 @@ ExpCls::ExpCls(std::string type,
             break;
         case EXP_TO_EXP_RELOP_COMPARE_EXP:
             if (cls3->get_value() == "<") {
-                code = reg.get_name() + " = icmp "
+                code = reg.get_name() + " = icmp slt " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
             else if (cls3->get_value() == "<=") {
-
+                code = reg.get_name() + " = icmp sle " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
             else if (cls3->get_value() == ">") {
-
+                code = reg.get_name() + " = icmp sgt " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
             else {  // (cls3->get_value() == ">=")
-
+                code = reg.get_name() + " = icmp sge " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
             }
             code_buffer.emit(code);
+            code = "br i1 " + reg.get_name() + ", label @, label @";
+            emit_result = code_buffer.emit(code);
+            list_item.first = emit_result;
+            list_item.second = FIRST;
+            truelist = CodeBuffer::makelist(list_item);
+            list_item.second = SECOND;
+            falselist = CodeBuffer::makelist(list_item);
+            break;
+        case EXP_TO_EXP_RELOP_EQUAL_EXP:
+            if (cls3->get_value() == "==") {
+                code = reg.get_name() + " = icmp eq " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            else { // (cls3->get_value() == "!=")
+                code = reg.get_name() + " = icmp ne " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            }
+            code_buffer.emit(code);
+            code = "br i1 " + reg.get_name() + ", label @, label @";
+            emit_result = code_buffer.emit(code);
+            list_item.first = emit_result;
+            list_item.second = FIRST;
+            truelist = CodeBuffer::makelist(list_item);
+            list_item.second = SECOND;
+            falselist = CodeBuffer::makelist(list_item);
+            break;
+        case EXP_TO_CAST:
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+            code_buffer.emit(code);
+            break;
         default:
-            std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
+            std::cerr << "EXP OPERATION_TYPE ERROR!" << std::endl;
             break;
     }
 
@@ -189,3 +226,28 @@ RelopEqualCls::RelopEqualCls(std::string value) : value(value) {}
 
 
 MCls::MCls() : label(code_buffer.genLabel()) {}
+
+
+StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()){
+    std::string code;
+    std::string global_code;
+    int emit_result;
+    Register reg;
+    pair<int, BranchLabelIndex> list_item;
+    switch (op) {
+        case STATEMENT_TO_TYPE_ID:
+            code = reg.get_name() + " = alloca " + size_by_type(cls1->get_name());
+            code_buffer.emit(code);
+            code = "store " + size_by_type(cls1->get_name()) + " 0, " + size_by_type(cls1->get_name()) + "* " + reg.get_name();
+            code_buffer.emit(code);
+            break;
+        case STATEMETN_TO_IF:
+            code_buffer.bpatch(cls1->get_truelist(), cls3->get_label());
+            nextlist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_nextlist());
+            break;
+        default:
+            std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
+            break;
+    }
+
+}

@@ -14,5 +14,13 @@ public:
     static unsigned int counter;
 };
 
+class LocalVarsReg {
+private:
+    std::string name;
+public:
+    LocalVarsReg();
+    std::string get_name();
+    static unsigned int counter;
+};
 
 #endif // _REGISTER_H_

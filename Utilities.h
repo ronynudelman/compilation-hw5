@@ -11,6 +11,7 @@ extern SymbolTableStack symbol_table_stack;
 extern OffsetTableStack offset_table_stack;
 extern int inside_while_counter;
 extern CodeBuffer& code_buffer;
+extern LocalVarsReg local_vars_reg;
 
 
 std::string size_by_type(std::string type);

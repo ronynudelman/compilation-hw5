@@ -108,7 +108,7 @@ Statement										:	LBRACE
 													Type
 													ID
 													SC
-													{check_assign_to_const($1->get_is_const()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name());}
+													{check_assign_to_const($1->get_is_const()); add_var_to_symbol_table($1->get_is_const(),$2->get_name(), $3->get_name()); $$ = new StatementCls(STATEMENT_TO_TYPE_ID, $2);}
 												|	TypeAnnotation
 													Type
 													ID
@@ -136,9 +136,11 @@ Statement										:	LBRACE
 													Exp
 													{check_matching_types("BOOL", $4->get_type());}
 													RPAREN
+													M
 													Statement
 													{close_scope();}
 													IfElse
+													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $8, $7);}
 												|	WHILE
 													{inside_while_counter++; open_scope();}
 													LPAREN
@@ -211,7 +213,7 @@ Exp												:	LPAREN
 													Exp
 													{$$ = new ExpCls(handle_binop_exp($1->get_type(), $3->get_type()), std::string("0"), EXP_TO_EXP_BINOP_ADD_EXP, $1, $3, $2);}
 												|	ID
-													{$$ = new ExpCls(get_id_type($1->get_name()));}		// TODO - do we need to do something here?
+													{$$ = new ExpCls(get_id_type($1->get_name()), std::string("0"), EXP_TO_ID, $1);}
 												|	Call
 													{$$ = new ExpCls($1->get_type());}					// TODO - we are afraid
 												|	NUM
@@ -232,12 +234,12 @@ Exp												:	LPAREN
 													AND
 													M
 													Exp
-													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $3->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_EXP_AND_EXP, $1, $4, $3);}
+													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $4->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_EXP_AND_EXP, $1, $4, $3);}
 												|	Exp
 													OR
 													M
 													Exp
-													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $3->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_EXP_OR_EXP, $1, $4, $3);}
+													{check_matching_types("BOOL", $1->get_type()); check_matching_types("BOOL", $4->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_EXP_OR_EXP, $1, $4, $3);}
 												|	Exp
 													RELOP_COMPARE
 													Exp
@@ -245,12 +247,12 @@ Exp												:	LPAREN
 												|	Exp
 													RELOP_EQUAL
 													Exp
-													{handle_relop_exp($1->get_type(), $3->get_type()); $$ = new ExpCls("BOOL");}
+													{handle_relop_exp($1->get_type(), $3->get_type()); $$ = new ExpCls("BOOL", std::string("0"), EXP_TO_EXP_RELOP_EQUAL_EXP, $1, $3, $2);}
 												|	LPAREN
 													Type
 													RPAREN
 													Exp
-													{handle_cast_exp($2->get_name(), $4->get_type(), $4->get_value()); $$ = new ExpCls($2->get_name());}
+													{handle_cast_exp($2->get_name(), $4->get_type(), $4->get_value()); $$ = new ExpCls($2->get_name(), std::string("0"), EXP_TO_CAST, $4);}
 ;
 
 M												:	{$$ = new MCls();}

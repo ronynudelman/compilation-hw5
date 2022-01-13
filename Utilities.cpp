@@ -4,6 +4,7 @@
 #include "Utilities.h"
 #include "Tables.h"
 #include "hw3_output.hpp"
+#include "Register.h"
 #include "bp.hpp"
 
 
@@ -11,6 +12,7 @@ SymbolTableStack symbol_table_stack;
 OffsetTableStack offset_table_stack;
 int inside_while_counter;
 CodeBuffer& code_buffer = CodeBuffer::instance();
+LocalVarsReg local_vars_reg;
 
 
 static bool is_type_starts_with_const(const std::string& type);
@@ -96,8 +98,8 @@ void open_scope() {
 
 
 void close_scope() {
-  output::endScope();
-  symbol_table_stack.print_top_symbol_table();
+  //output::endScope();
+  //symbol_table_stack.print_top_symbol_table();
   symbol_table_stack.pop_symbol_table();
   offset_table_stack.pop_offset();
 }

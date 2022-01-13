@@ -15,6 +15,7 @@ enum OPERATION_TYPE {
     EXP_TO_LPAREN_EXP_RPAREN,
     EXP_TO_EXP_BINOP_MUL_EXP,
     EXP_TO_EXP_BINOP_ADD_EXP,
+    EXP_TO_ID,
     EXP_TO_NUM,
     EXP_TO_NUM_B,
     EXP_TO_STRING,
@@ -24,7 +25,10 @@ enum OPERATION_TYPE {
     EXP_TO_EXP_AND_EXP,
     EXP_TO_EXP_OR_EXP,
     EXP_TO_EXP_RELOP_COMPARE_EXP,
-    EXP_TO_EXP_RELOP_EQUAL_EXP
+    EXP_TO_EXP_RELOP_EQUAL_EXP,
+    EXP_TO_CAST,
+    STATEMETN_TO_IF,
+    STATEMENT_TO_TYPE_ID
 };
 
 
@@ -232,6 +236,15 @@ private:
 public:
   MCls();
   std::string get_label() override { return label; }
+};
+
+
+class StatementCls : public AbsCls {
+private:
+    std::vector<pair<int,BranchLabelIndex>> nextlist;
+public:
+    StatementCls(OPERATION_TYPE op = NONE, AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, AbsCls* cls3 = nullptr);
+    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
 
 #endif // TYPES_H_
