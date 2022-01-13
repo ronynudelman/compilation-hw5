@@ -20,7 +20,11 @@ enum OPERATION_TYPE {
     EXP_TO_STRING,
     EXP_TO_TRUE,
     EXP_TO_FALSE,
-    EXP_TO_NOT_EXP
+    EXP_TO_NOT_EXP,
+    EXP_TO_EXP_AND_EXP,
+    EXP_TO_EXP_OR_EXP,
+    EXP_TO_EXP_RELOP_COMPARE_EXP,
+    EXP_TO_EXP_RELOP_EQUAL_EXP
 };
 
 
@@ -40,6 +44,7 @@ public:
   virtual std::vector<pair<int,BranchLabelIndex>> get_nextlist() { std::cerr << "12 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual std::string get_str_gen_name() { std::cerr << "13 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual std::string get_size() { std::cerr << "14 Unexpected error" << std::endl; exit(1); return std::string(); }
+  virtual std::string get_label() { std::cerr << "15 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual ~AbsCls() = default;
 };
 
@@ -202,5 +207,31 @@ public:
   std::string get_size() override { return size; }
 };
 
+
+class RelopCompareCls : public AbsCls {
+private:
+  std::string value;
+public:
+  RelopCompareCls(std::string value);
+  std::string get_value() override { return value; }
+};
+
+
+class RelopEqualCls : public AbsCls {
+private:
+  std::string value;
+public:
+  RelopEqualCls(std::string value);
+  std::string get_value() override { return value; }
+};
+
+
+class MCls : public AbsCls {
+private:
+  std::string label;
+public:
+  MCls();
+  std::string get_label() override { return label; }
+};
 
 #endif // TYPES_H_

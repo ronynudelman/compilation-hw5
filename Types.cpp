@@ -121,9 +121,33 @@ ExpCls::ExpCls(std::string type,
             falselist = CodeBuffer::makelist(list_item);
             break;
         case EXP_TO_NOT_EXP:
-            code_buffer.emit(code);
-            // TODO - need to complete
+            truelist = cls1->get_falselist();
+            falselist = cls1->get_truelist();
             break;
+        case EXP_TO_EXP_AND_EXP:
+            code_buffer.bpatch(cls1->get_truelist(), cls3->get_label());
+            falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
+            truelist = cls2->get_truelist();
+            break;
+        case EXP_TO_EXP_OR_EXP:
+            code_buffer.bpatch(cls1->get_falselist(), cls3->get_label());
+            truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
+            falselist = cls2->get_falselist();
+            break;
+        case EXP_TO_EXP_RELOP_COMPARE_EXP:
+            if (cls3->get_value() == "<") {
+                code = reg.get_name() + " = icmp "
+            }
+            else if (cls3->get_value() == "<=") {
+
+            }
+            else if (cls3->get_value() == ">") {
+
+            }
+            else {  // (cls3->get_value() == ">=")
+
+            }
+            code_buffer.emit(code);
         default:
             std::cerr << "OPERATION_TYPE ERROR!" << std::endl;
             break;
@@ -156,3 +180,12 @@ StringCls::StringCls(std::string value) : str_gen(StringGen()), value(value), si
     this->value = this->value.substr(1, this->value.size() - 2);
     this->size = std::to_string(this->value.size());
 }
+
+
+RelopCompareCls::RelopCompareCls(std::string value) : value(value) {}
+
+
+RelopEqualCls::RelopEqualCls(std::string value) : value(value) {}
+
+
+MCls::MCls() : label(code_buffer.genLabel()) {}
