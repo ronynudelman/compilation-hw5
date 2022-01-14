@@ -68,12 +68,19 @@ public:
 
 class ConstTable {
 private:
-    std::list<pair<std::string, int>> const_values;
+    std::list<pair<std::string, std::string>> const_values;
 public:
     ConstTable() = default;
     void remove(std::string id);
-    void update(std::string id, int value);
-    int get_value(std::string id);
+    void update(std::string id, std::string value);
+    std::string get_value(std::string id);
+    void print() {
+        std::cout << "*** Printing ConstTable ***" << std::endl;
+        for (std::list<pair<std::string, std::string>>::iterator it = const_values.begin(); it != const_values.end(); ++it) {
+            std::cout << "id: " << it->first << ", value: " << it->second << std::endl;
+        }
+        std::cout << "***************************" << std::endl;
+    }
 };
 
 

@@ -45,11 +45,13 @@ TypeAnnotationCls::TypeAnnotationCls(bool is_const) : is_const(is_const) {}
 
 ExpCls::ExpCls(std::string type,
                std::string value,
+               ExpCase exp_case,
                OPERATION_TYPE op,
                AbsCls* cls1,
                AbsCls* cls2,
                AbsCls* cls3) : type(type),
                                value(value),
+                               exp_case(exp_case),
                                reg(Register()),
                                truelist(std::vector<pair<int,BranchLabelIndex>>()),
                                falselist(std::vector<pair<int,BranchLabelIndex>>()),
@@ -57,18 +59,38 @@ ExpCls::ExpCls(std::string type,
     std::string code;
     std::string global_code;
     if (op == EXP_TO_LPAREN_EXP_RPAREN) {
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+        }
+        else {
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+        }
         code_buffer.emit(code);
         truelist = cls1->get_truelist();
         falselist = cls1->get_falselist();
         nextlist = cls1->get_nextlist();
     }
     else if (op == EXP_TO_EXP_BINOP_MUL_EXP) {
+        code = reg.get_name() + " = ";
         if (cls3->get_value() == "*") {
-            code = reg.get_name() + " = mul " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "mul ";
         }
         else {
-            code = reg.get_name() + " = sdiv " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "sdiv ";
+        }
+        code += size_by_type(type) + " ";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code += cls1->get_value();
+        }
+        else {
+            code += cls1->get_reg();
+        }
+        code += ", ";
+        if (cls2->get_exp_case() == CONST_ID) {
+            code += cls2->get_value();
+        }
+        else {
+            code += cls2->get_reg();
         }
         code_buffer.emit(code);
         truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
@@ -76,11 +98,26 @@ ExpCls::ExpCls(std::string type,
         nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
     }
     else if (op == EXP_TO_EXP_BINOP_ADD_EXP) {
+        code = reg.get_name() + " = ";
         if (cls3->get_value() == "+") {
-            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "add ";
         }
         else {
-            code = reg.get_name() + " = sub " + size_by_type(type) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "sub ";
+        }
+        code += size_by_type(type) + " ";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code += cls1->get_value();
+        }
+        else {
+            code += cls1->get_reg();
+        }
+        code += ", ";
+        if (cls2->get_exp_case() == CONST_ID) {
+            code += cls2->get_value();
+        }
+        else {
+            code += cls2->get_reg();
         }
         code_buffer.emit(code);
         truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
@@ -88,12 +125,19 @@ ExpCls::ExpCls(std::string type,
         nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
     }
     else if (op == EXP_TO_ID) {
-        Register temp_reg;
-        std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
-        code = temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-        code_buffer.emit(code);
-        code = reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
-        code_buffer.emit(code);
+        std::string id_value = const_table.get_value(cls1->get_name());
+        if (!id_value.empty()) {
+            this->exp_case = CONST_ID;
+            this->value = id_value;
+        }
+        else {
+            Register temp_reg;
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code = temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code_buffer.emit(code);
+            code = reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
+            code_buffer.emit(code);
+        }
     }
     else if (op == EXP_TO_NUM) {
         code = reg.get_name() + " = add i32 " + value + ", 0";
@@ -116,7 +160,7 @@ ExpCls::ExpCls(std::string type,
         pair<int, BranchLabelIndex> list_item;
         code = reg.get_name() + " = add i32 1, 0";
         code_buffer.emit(code);
-        int emit_result = code_buffer.emit("br labal @");
+        int emit_result = code_buffer.emit("br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
         truelist = CodeBuffer::makelist(list_item);
@@ -125,7 +169,7 @@ ExpCls::ExpCls(std::string type,
         pair<int, BranchLabelIndex> list_item;
         code = reg.get_name() + " = add i32 0, 0";
         code_buffer.emit(code);
-        int emit_result = code_buffer.emit("br labal @");
+        int emit_result = code_buffer.emit("br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
         falselist = CodeBuffer::makelist(list_item);
@@ -145,22 +189,37 @@ ExpCls::ExpCls(std::string type,
         falselist = cls2->get_falselist();
     }
     else if (op == EXP_TO_EXP_RELOP_COMPARE_EXP) {
-        pair<int, BranchLabelIndex> list_item;
+        code = reg.get_name() + " = icmp ";
         if (cls3->get_value() == "<") {
-            code = reg.get_name() + " = icmp slt " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "slt ";
         }
         else if (cls3->get_value() == "<=") {
-            code = reg.get_name() + " = icmp sle " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "sle ";
         }
         else if (cls3->get_value() == ">") {
-            code = reg.get_name() + " = icmp sgt " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "sgt ";
         }
-        else {  // (cls3->get_value() == ">=")
-            code = reg.get_name() + " = icmp sge " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+        else { // (cls3->get_value() == ">=")
+            code += "sge ";
+        }
+        code += size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " ";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code += cls1->get_value();
+        }
+        else {
+            code += cls1->get_reg();
+        }
+        code += ", ";
+        if (cls2->get_exp_case() == CONST_ID) {
+            code += cls2->get_value();
+        }
+        else {
+            code += cls2->get_reg();
         }
         code_buffer.emit(code);
         code = "br i1 " + reg.get_name() + ", label @, label @";
         int emit_result = code_buffer.emit(code);
+        pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
         truelist = CodeBuffer::makelist(list_item);
@@ -168,16 +227,31 @@ ExpCls::ExpCls(std::string type,
         falselist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_EXP_RELOP_EQUAL_EXP) {
-        pair<int, BranchLabelIndex> list_item;
+        code = reg.get_name() + " = icmp ";
         if (cls3->get_value() == "==") {
-            code = reg.get_name() + " = icmp eq " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "eq ";
         }
         else { // (cls3->get_value() == "!=")
-            code = reg.get_name() + " = icmp ne " + size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " " + cls1->get_reg() + ", " + cls2->get_reg();
+            code += "ne ";
+        }
+        code += size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " ";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code += cls1->get_value();
+        }
+        else {
+            code += cls1->get_reg();
+        }
+        code += ", ";
+        if (cls2->get_exp_case() == CONST_ID) {
+            code += cls2->get_value();
+        }
+        else {
+            code += cls2->get_reg();
         }
         code_buffer.emit(code);
         code = "br i1 " + reg.get_name() + ", label @, label @";
         int emit_result = code_buffer.emit(code);
+        pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
         truelist = CodeBuffer::makelist(list_item);
@@ -185,7 +259,12 @@ ExpCls::ExpCls(std::string type,
         falselist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_CAST) {
-        code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+        if (cls1->get_exp_case() == CONST_ID) {
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+        }
+        else {
+            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+        }
         code_buffer.emit(code);
     }
     else {
@@ -234,16 +313,28 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     std::string global_code;
     Register reg;
     if (op == STATEMENT_TO_TYPE_ID) {
+        const_table.remove(cls1->get_name());
         code = reg.get_name() + " = alloca i32";
         code_buffer.emit(code);
         code = "store i32 0, i32* " + reg.get_name();
         code_buffer.emit(code);
     }
     else if (op == STATEMENT_TO_TYPE_ID_EXP) { //TODO - deal with case CONST
-        code = reg.get_name() + " = alloca i32";
-        code_buffer.emit(code);
-        code = "store i32 " + cls2->get_reg() + ", i32* " + reg.get_name();
-        code_buffer.emit(code);
+        if (cls1->get_is_const() && cls3->get_exp_case() == SIMPLE_NUM) {
+            const_table.update(cls2->get_name(), cls3->get_value());
+        }
+        else {
+            const_table.remove(cls2->get_name());
+            code = reg.get_name() + " = alloca i32";
+            code_buffer.emit(code);
+            if (cls3->get_exp_case() == CONST_ID) {
+                code = "store i32 " + cls3->get_value() + ", i32* " + reg.get_name();
+            }
+            else {
+                code = "store i32 " + cls3->get_reg() + ", i32* " + reg.get_name();
+            }
+            code_buffer.emit(code);
+        }
     }
     else if (op == STATEMETN_TO_IF) {
         code_buffer.bpatch(cls1->get_truelist(), cls3->get_label());

@@ -33,6 +33,13 @@ enum OPERATION_TYPE {
 };
 
 
+enum ExpCase {
+    REGULAR,
+    SIMPLE_NUM,
+    CONST_ID
+};
+
+
 class AbsCls {
 public:
   virtual std::string get_name() { std::cerr << "1 Unexpected error" << std::endl; exit(1); return std::string(); }
@@ -50,6 +57,7 @@ public:
   virtual std::string get_str_gen_name() { std::cerr << "13 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual std::string get_size() { std::cerr << "14 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual std::string get_label() { std::cerr << "15 Unexpected error" << std::endl; exit(1); return std::string(); }
+  virtual ExpCase get_exp_case() { std::cerr << "16 Unexpected error" << std::endl; exit(1); return REGULAR; }
   virtual ~AbsCls() = default;
 };
 
@@ -133,6 +141,8 @@ class ExpCls : public AbsCls {
 private:
 	std::string type;
     std::string value;
+    bool is_simple_num;
+    ExpCase exp_case;
     Register reg;
     std::vector<pair<int,BranchLabelIndex>> truelist;
     std::vector<pair<int,BranchLabelIndex>> falselist;
@@ -140,12 +150,14 @@ private:
 public:
     ExpCls(std::string type,
            std::string value = std::string("0"),
+           ExpCase exp_case = REGULAR,
            OPERATION_TYPE op = NONE,
            AbsCls* cls1 = nullptr,
            AbsCls* cls2 = nullptr,
            AbsCls* cls3 = nullptr);
 	std::string get_type() override { return type; }
     std::string get_value() override { return value; }
+    ExpCase get_exp_case() override { return exp_case; }
     std::string get_reg() override { return reg.get_name(); }
     std::vector<pair<int,BranchLabelIndex>> get_truelist() override { return truelist; }
     std::vector<pair<int,BranchLabelIndex>> get_falselist() override { return falselist; }

@@ -10,6 +10,7 @@
 
 SymbolTableStack symbol_table_stack;
 OffsetTableStack offset_table_stack;
+ConstTable const_table;
 int inside_while_counter;
 CodeBuffer& code_buffer = CodeBuffer::instance();
 LocalVarsReg local_vars_reg;

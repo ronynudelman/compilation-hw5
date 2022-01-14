@@ -9,6 +9,7 @@
 
 extern SymbolTableStack symbol_table_stack;
 extern OffsetTableStack offset_table_stack;
+extern ConstTable const_table;
 extern int inside_while_counter;
 extern CodeBuffer& code_buffer;
 extern LocalVarsReg local_vars_reg;
