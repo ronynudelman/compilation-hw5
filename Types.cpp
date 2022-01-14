@@ -138,6 +138,20 @@ ExpCls::ExpCls(std::string type,
             code = reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
             code_buffer.emit(code);
         }
+        std::string var = id_value.empty() ? reg.get_name() : id_value;
+        if (type.find("BOOL") != std::string::npos) {
+            Register temp_reg;
+            code = temp_reg.get_name() + " = icmp eq i32 " + var + ", 1";
+            code_buffer.emit(code);
+            code = "br i1 " + temp_reg.get_name() + ", label @, label @";
+            int emit_result = code_buffer.emit(code);
+            pair<int, BranchLabelIndex> list_item;
+            list_item.first = emit_result;
+            list_item.second = FIRST;
+            truelist = CodeBuffer::makelist(list_item);
+            list_item.second = SECOND;
+            falselist = CodeBuffer::makelist(list_item);
+        }
     }
     else if (op == EXP_TO_NUM) {
         code = reg.get_name() + " = add i32 " + value + ", 0";
@@ -308,7 +322,15 @@ RelopEqualCls::RelopEqualCls(std::string value) : value(value) {}
 MCls::MCls() : label(code_buffer.genLabel()) {}
 
 
-StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()){
+NCls::NCls() : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+    pair<int,BranchLabelIndex> new_pair;
+    new_pair.first = code_buffer.emit("br label @");
+    new_pair.second = FIRST;
+    nextlist = CodeBuffer::makelist(new_pair);
+}
+
+
+StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
     Register reg;
@@ -349,10 +371,21 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         code_buffer.emit(code);
     }
     else if (op == STATEMETN_TO_IF) {
-        code_buffer.bpatch(cls1->get_truelist(), cls3->get_label());
-        nextlist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_nextlist());
+        if (cls5->get_is_empty()) {
+            code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
+            nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
+        }
+        else {
+            code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
+            code_buffer.bpatch(cls1->get_falselist(), cls5->get_label());
+            nextlist = CodeBuffer::merge(cls3->get_nextlist(), cls5->get_nextlist());
+            nextlist = CodeBuffer::merge(nextlist, cls4->get_nextlist());
+        }
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
     }
 }
+
+
+IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, bool is_empty) : nextlist(cls2->get_nextlist()), label(cls1->get_label()), is_empty(is_empty) {}

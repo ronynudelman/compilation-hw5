@@ -138,9 +138,10 @@ Statement										:	LBRACE
 													RPAREN
 													M
 													Statement
+													N
 													{close_scope();}
 													IfElse
-													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $8, $7);}
+													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $7, $8, $9, $11);}
 												|	WHILE
 													{inside_while_counter++; open_scope();}
 													LPAREN
@@ -157,14 +158,15 @@ Statement										:	LBRACE
 													{check_legal_continue();}
 ;
 
-IfElse											: /* epsilon */
+IfElse											: 	{$$ = new IfElseCls();}
 													// we picked up a random token with lower priority compared
 													// to ELSE, to solve shift-reduce conflict
 													%prec ASSIGN
-												| ELSE
+												| 	ELSE
 													{open_scope();}
+													M
 													Statement
-													{close_scope();}
+													{close_scope(); $$ = new IfElseCls($3, $4, false); }
 ;
 
 Call											:	ID
@@ -256,6 +258,9 @@ Exp												:	LPAREN
 ;
 
 M												:	{$$ = new MCls();}
+
+
+N												:	{$$ = new NCls();}
 
 %%
 

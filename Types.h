@@ -59,6 +59,7 @@ public:
   virtual std::string get_size() { std::cerr << "14 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual std::string get_label() { std::cerr << "15 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual ExpCase get_exp_case() { std::cerr << "16 Unexpected error" << std::endl; exit(1); return REGULAR; }
+  virtual bool get_is_empty() { std::cerr << "17 Unexpected error" << std::endl; exit(1); return true; }
   virtual ~AbsCls() = default;
 };
 
@@ -246,10 +247,19 @@ public:
 
 class MCls : public AbsCls {
 private:
-  std::string label;
+    std::string label;
 public:
-  MCls();
-  std::string get_label() override { return label; }
+    MCls();
+    std::string get_label() override { return label; }
+};
+
+
+class NCls : public AbsCls {
+private:
+    std::vector<pair<int,BranchLabelIndex>> nextlist;
+public:
+    NCls();
+    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
 
 
@@ -257,8 +267,27 @@ class StatementCls : public AbsCls {
 private:
     std::vector<pair<int,BranchLabelIndex>> nextlist;
 public:
-    StatementCls(OPERATION_TYPE op = NONE, AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, AbsCls* cls3 = nullptr);
+    StatementCls(OPERATION_TYPE op = NONE,
+                 AbsCls* cls1 = nullptr,
+                 AbsCls* cls2 = nullptr,
+                 AbsCls* cls3 = nullptr,
+                 AbsCls* cls4 = nullptr,
+                 AbsCls* cls5 = nullptr);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
+
+
+class IfElseCls : public AbsCls {
+private:
+    std::vector<pair<int,BranchLabelIndex>> nextlist;
+    std::string label;
+    bool is_empty;
+public:
+    IfElseCls(AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, bool is_empty = true);
+    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
+    std::string get_label() override { return label; }
+    bool get_is_empty() override {return is_empty; }
+};
+
 
 #endif // TYPES_H_
