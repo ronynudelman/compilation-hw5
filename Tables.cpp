@@ -155,3 +155,37 @@ int OffsetTableStack::top_offset() {
 void OffsetTableStack::inc_top_offset() {
   (offsets.back())++;
 }
+
+
+void ConstTable::remove(std::string id) {
+    for (std::list<pair<std::string, int>>::iterator it = const_values.begin(); it != const_values.end(); ++it) {
+        if (it->first == id) {
+            const_values.erase(it);
+            break;
+        }
+    }
+}
+
+
+void ConstTable::update(std::string id, int value) {
+    for (std::list<pair<std::string, int>>::iterator it = const_values.begin(); it != const_values.end(); ++it) {
+        if (it->first == id) {
+            it->second = value;
+            return;
+        }
+    }
+    pair<std::string, int> new_pair;
+    new_pair.first = id;
+    new_pair.second = value;
+    const_values.push_front(new_pair);
+}
+
+
+int ConstTable::get_value(std::string id) {
+    for (std::list<pair<std::string, int>>::iterator it = const_values.begin(); it != const_values.end(); ++it) {
+        if (it->first == id) {
+            return it->second;
+        }
+    }
+    return -1;
+}

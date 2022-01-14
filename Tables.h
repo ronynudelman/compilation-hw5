@@ -66,4 +66,15 @@ public:
 };
 
 
+class ConstTable {
+private:
+    std::list<pair<std::string, int>> const_values;
+public:
+    ConstTable() = default;
+    void remove(std::string id);
+    void update(std::string id, int value);
+    int get_value(std::string id);
+};
+
+
 #endif // TABLES_H_
