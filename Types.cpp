@@ -319,7 +319,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         code = "store i32 0, i32* " + reg.get_name();
         code_buffer.emit(code);
     }
-    else if (op == STATEMENT_TO_TYPE_ID_EXP) { //TODO - deal with case CONST
+    else if (op == STATEMENT_TO_TYPE_ID_EXP) {
         if (cls1->get_is_const() && cls3->get_exp_case() == SIMPLE_NUM) {
             const_table.update(cls2->get_name(), cls3->get_value());
         }
@@ -335,6 +335,18 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             }
             code_buffer.emit(code);
         }
+    }
+    else if (op == STATEMENT_TO_ID_EXP) {
+        std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+        code = reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+        code_buffer.emit(code);
+        if (cls2->get_exp_case() == CONST_ID) {
+            code = "store i32 " + cls2->get_value() + ", i32* " + reg.get_name();
+        }
+        else {
+            code = "store i32 " + cls2->get_reg() + ", i32* " + reg.get_name();
+        }
+        code_buffer.emit(code);
     }
     else if (op == STATEMETN_TO_IF) {
         code_buffer.bpatch(cls1->get_truelist(), cls3->get_label());

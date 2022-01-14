@@ -120,7 +120,7 @@ Statement										:	LBRACE
 													ASSIGN
 													Exp
 													SC
-													{check_var_valid_for_assign($1->get_name()); std::string& id_type = get_id_type($1->get_name()); check_valid_types_for_assign(id_type, $3->get_type());}
+													{check_var_valid_for_assign($1->get_name()); std::string& id_type = get_id_type($1->get_name()); check_valid_types_for_assign(id_type, $3->get_type()); $$ = new StatementCls(STATEMENT_TO_ID_EXP, $1, $3);}
 												|	Call
 													SC
 												|	RETURN
