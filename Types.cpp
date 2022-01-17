@@ -335,7 +335,10 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     std::string global_code;
     Register reg1;
     Register reg2;
-    if (op == STATEMENT_TO_TYPE_ID) {
+    if (op == STATEMENT_TO_STATEMENTS) {
+        nextlist = cls1->get_nextlist();
+    }
+    else if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
         code = reg1.get_name() + " = alloca i32";
         code_buffer.emit(code);
@@ -440,6 +443,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         if (cls5->get_is_empty()) {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
             nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
+            nextlist = CodeBuffer::merge(nextlist, cls4->get_nextlist());
         }
         else {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
@@ -468,4 +472,11 @@ StatementsCls::StatementsCls(OPERATION_TYPE op,
 }
 
 
-IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, bool is_empty) : nextlist(cls2->get_nextlist()), label(cls1->get_label()), is_empty(is_empty) {}
+IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, bool is_empty) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), label(std::string()), is_empty(is_empty) {
+    if (cls2) {
+        nextlist = cls2->get_nextlist();
+    }
+    if (cls1) {
+        label = cls1->get_label();
+    }
+}

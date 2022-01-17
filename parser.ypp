@@ -106,7 +106,7 @@ Statement										:	LBRACE
 													{open_scope();}
 													Statements
 													RBRACE
-													{close_scope();}
+													{close_scope(); $$ = new StatementCls(STATEMENT_TO_STATEMENTS, $3);}
 												|	TypeAnnotation
 													Type
 													ID
