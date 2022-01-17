@@ -377,19 +377,6 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
                 code_buffer.emit(code);
                 code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
                 code_buffer.emit(code);
-
-                // code = reg1.get_name() + " = alloca i32";
-                // code_buffer.emit(code);
-                // // if EXP is evaluated to true, then we jump here, and store 1 in ID
-                // std::string true_label = code_buffer.genLabel();
-                // code_buffer.bpatch(cls3->get_truelist(), true_label);
-                // code = "store i32 1, i32* " + reg1.get_name();
-                // code_buffer.emit(code);
-                // // if EXP is evaluated to false, then we jump here, and store 0 in ID
-                // std::string false_label = code_buffer.genLabel();
-                // code_buffer.bpatch(cls3->get_falselist(), false_label);
-                // code = "store i32 0, i32* " + reg1.get_name();
-                // code_buffer.emit(code);
             }
             else {
                 code = reg1.get_name() + " = alloca i32";
@@ -435,21 +422,6 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             code_buffer.emit(code);
             code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
             code_buffer.emit(code);
-
-            // // calculate the address of ID
-            // std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
-            // code = reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-            // code_buffer.emit(code);
-            // // if EXP is evaluated to true, then we jump here, and store 1 in ID
-            // std::string true_label = code_buffer.genLabel();
-            // code_buffer.bpatch(cls2->get_truelist(), true_label);
-            // code = "store i32 1, i32* " + reg.get_name();
-            // code_buffer.emit(code);
-            // // if EXP is evaluated to false, then we jump here, and store 0 in ID
-            // std::string false_label = code_buffer.genLabel();
-            // code_buffer.bpatch(cls2->get_falselist(), false_label);
-            // code = "store i32 0, i32* " + reg.get_name();
-            // code_buffer.emit(code);
         }
         else {
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
