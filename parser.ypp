@@ -95,8 +95,11 @@ FormalDecl										:	TypeAnnotation
 ;
 
 Statements										:	Statement
+													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENT, $1);}
 												|	Statements
+													M
 													Statement
+													{{$$ = new StatementsCls(STATEMENTS_TO_STATEMENTS_STATEMENT, $1, $2, $3);}}
 ;
 
 Statement										:	LBRACE

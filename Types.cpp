@@ -333,12 +333,13 @@ NCls::NCls() : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
 StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
-    Register reg;
+    Register reg1;
+    Register reg2;
     if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
-        code = reg.get_name() + " = alloca i32";
+        code = reg1.get_name() + " = alloca i32";
         code_buffer.emit(code);
-        code = "store i32 0, i32* " + reg.get_name();
+        code = "store i32 0, i32* " + reg1.get_name();
         code_buffer.emit(code);
     }
     else if (op == STATEMENT_TO_TYPE_ID_EXP) {
@@ -347,28 +348,121 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
         else {
             const_table.remove(cls2->get_name());
-            code = reg.get_name() + " = alloca i32";
-            code_buffer.emit(code);
-            if (cls3->get_exp_case() == CONST_ID) {
-                code = "store i32 " + cls3->get_value() + ", i32* " + reg.get_name();
+            if (cls3->get_type().find("BOOL") != std::string::npos) {
+                std::string true_label = code_buffer.genLabel();
+                code_buffer.bpatch(cls3->get_truelist(), true_label);
+                code = "br label @";
+                int true_label_addr = code_buffer.emit(code);
+                pair<int,BranchLabelIndex> true_label_pair;
+                true_label_pair.first = true_label_addr;
+                true_label_pair.second = FIRST;
+
+                std::string false_label = code_buffer.genLabel();
+                code_buffer.bpatch(cls3->get_falselist(), false_label);
+                code = "br label @";
+                int false_label_addr = code_buffer.emit(code);
+                pair<int,BranchLabelIndex> false_label_pair;
+                false_label_pair.first = false_label_addr;
+                false_label_pair.second = FIRST;
+
+                vector<pair<int,BranchLabelIndex>> branches_to_patch;
+                branches_to_patch.push_back(true_label_pair);
+                branches_to_patch.push_back(false_label_pair);
+                std::string final_label = code_buffer.genLabel();
+                code_buffer.bpatch(branches_to_patch, final_label);
+
+                code = reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+                code_buffer.emit(code);
+                code = reg2.get_name() + " = alloca i32";
+                code_buffer.emit(code);
+                code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
+                code_buffer.emit(code);
+
+                // code = reg1.get_name() + " = alloca i32";
+                // code_buffer.emit(code);
+                // // if EXP is evaluated to true, then we jump here, and store 1 in ID
+                // std::string true_label = code_buffer.genLabel();
+                // code_buffer.bpatch(cls3->get_truelist(), true_label);
+                // code = "store i32 1, i32* " + reg1.get_name();
+                // code_buffer.emit(code);
+                // // if EXP is evaluated to false, then we jump here, and store 0 in ID
+                // std::string false_label = code_buffer.genLabel();
+                // code_buffer.bpatch(cls3->get_falselist(), false_label);
+                // code = "store i32 0, i32* " + reg1.get_name();
+                // code_buffer.emit(code);
             }
             else {
-                code = "store i32 " + cls3->get_reg() + ", i32* " + reg.get_name();
+                code = reg1.get_name() + " = alloca i32";
+                code_buffer.emit(code);
+                if (cls3->get_exp_case() == CONST_ID) {
+                    code = "store i32 " + cls3->get_value() + ", i32* " + reg1.get_name();
+                }
+                else {
+                    code = "store i32 " + cls3->get_reg() + ", i32* " + reg1.get_name();
+                }
+                code_buffer.emit(code);
             }
-            code_buffer.emit(code);
         }
     }
     else if (op == STATEMENT_TO_ID_EXP) {
-        std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
-        code = reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-        code_buffer.emit(code);
-        if (cls2->get_exp_case() == CONST_ID) {
-            code = "store i32 " + cls2->get_value() + ", i32* " + reg.get_name();
+        if (cls2->get_type().find("BOOL") != std::string::npos) {
+            std::string true_label = code_buffer.genLabel();
+            code_buffer.bpatch(cls2->get_truelist(), true_label);
+            code = "br label @";
+            int true_label_addr = code_buffer.emit(code);
+            pair<int,BranchLabelIndex> true_label_pair;
+            true_label_pair.first = true_label_addr;
+            true_label_pair.second = FIRST;
+
+            std::string false_label = code_buffer.genLabel();
+            code_buffer.bpatch(cls2->get_falselist(), false_label);
+            code = "br label @";
+            int false_label_addr = code_buffer.emit(code);
+            pair<int,BranchLabelIndex> false_label_pair;
+            false_label_pair.first = false_label_addr;
+            false_label_pair.second = FIRST;
+
+            vector<pair<int,BranchLabelIndex>> branches_to_patch;
+            branches_to_patch.push_back(true_label_pair);
+            branches_to_patch.push_back(false_label_pair);
+            std::string final_label = code_buffer.genLabel();
+            code_buffer.bpatch(branches_to_patch, final_label);
+
+            code = reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+            code_buffer.emit(code);
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code = reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code_buffer.emit(code);
+            code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
+            code_buffer.emit(code);
+
+            // // calculate the address of ID
+            // std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            // code = reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            // code_buffer.emit(code);
+            // // if EXP is evaluated to true, then we jump here, and store 1 in ID
+            // std::string true_label = code_buffer.genLabel();
+            // code_buffer.bpatch(cls2->get_truelist(), true_label);
+            // code = "store i32 1, i32* " + reg.get_name();
+            // code_buffer.emit(code);
+            // // if EXP is evaluated to false, then we jump here, and store 0 in ID
+            // std::string false_label = code_buffer.genLabel();
+            // code_buffer.bpatch(cls2->get_falselist(), false_label);
+            // code = "store i32 0, i32* " + reg.get_name();
+            // code_buffer.emit(code);
         }
         else {
-            code = "store i32 " + cls2->get_reg() + ", i32* " + reg.get_name();
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code = reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code_buffer.emit(code);
+            if (cls2->get_exp_case() == CONST_ID) {
+                code = "store i32 " + cls2->get_value() + ", i32* " + reg1.get_name();
+            }
+            else {
+                code = "store i32 " + cls2->get_reg() + ", i32* " + reg1.get_name();
+            }
+            code_buffer.emit(code);
         }
-        code_buffer.emit(code);
     }
     else if (op == STATEMETN_TO_IF) {
         if (cls5->get_is_empty()) {
@@ -384,6 +478,20 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
+    }
+}
+
+
+StatementsCls::StatementsCls(OPERATION_TYPE op,
+                             AbsCls* cls1,
+                             AbsCls* cls2,
+                             AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+    if (op == STATEMENTS_TO_STATEMENT) {
+        nextlist = cls1->get_nextlist();
+    }
+    else if (op == STATEMENTS_TO_STATEMENTS_STATEMENT) {
+        code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
+        nextlist = cls3->get_nextlist();
     }
 }
 

@@ -30,7 +30,9 @@ enum OPERATION_TYPE {
     STATEMETN_TO_IF,
     STATEMENT_TO_TYPE_ID,
     STATEMENT_TO_TYPE_ID_EXP,
-    STATEMENT_TO_ID_EXP
+    STATEMENT_TO_ID_EXP,
+    STATEMENTS_TO_STATEMENT,
+    STATEMENTS_TO_STATEMENTS_STATEMENT
 };
 
 
@@ -275,6 +277,19 @@ public:
                  AbsCls* cls5 = nullptr);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
+
+
+class StatementsCls : public AbsCls {
+private:
+    std::vector<pair<int,BranchLabelIndex>> nextlist;
+public:
+    StatementsCls(OPERATION_TYPE op = NONE,
+                 AbsCls* cls1 = nullptr,
+                 AbsCls* cls2 = nullptr,
+                 AbsCls* cls3 = nullptr);
+    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
+};
+
 
 
 class IfElseCls : public AbsCls {
