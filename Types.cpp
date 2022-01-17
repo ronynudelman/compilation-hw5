@@ -466,21 +466,12 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
     }
     else if (op == STATEMENT_TO_WHILE) {
-        // cls1 - N
-        // cls2 - M (exp)
-        // cls3 - exp
-        // cls4 - M (statement)
-        // cls5 - statement
         code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
         code_buffer.bpatch(cls3->get_truelist(), cls4->get_label());
         nextlist = cls3->get_falselist();
         code_buffer.emit("br label " + cls2->get_label());
         std::string final_label = code_buffer.genLabel();
         code_buffer.bpatch(nextlist, final_label);
-
-        // std::string final_branch_label = code_buffer.genLabel();
-        // code_buffer.emit("br label " + cls2->get_label());
-        // code_buffer.bpatch(cls5->get_nextlist(), final_branch_label);
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;

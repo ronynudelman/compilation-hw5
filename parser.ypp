@@ -63,9 +63,7 @@ FuncDecl										:	RetType
 													{add_func_to_symbol_table($2->get_name(), $1->get_name(), $4->get_args_types(), $2->get_yylineno());}
 													LBRACE
 													{open_scope(); add_func_args_to_symbol_table($4->get_args_types(), $4->get_args_names());}
-													Statements	// TODO : no one call backpatch to fix the last statement in Statements.
-																// TODO : Thus, we need to create a new label here with NOP and fix the last
-																// TODO : statement and make it just to this new label
+													Statements
 													RBRACE
 													{close_scope();}
 ;
@@ -105,8 +103,7 @@ Statement										:	LBRACE
 													{open_scope();}
 													Statements
 													RBRACE
-													{close_scope();}	// TODO : should we insert br label at the end of every statement?
-																															// TODO : before every new label, we must have br or ret commands
+													{close_scope();}
 												|	TypeAnnotation
 													Type
 													ID
@@ -136,19 +133,19 @@ Statement										:	LBRACE
 												|	IF
 													{open_scope();}
 													LPAREN
-													Exp //1
+													Exp
 													{check_matching_types("BOOL", $4->get_type());}
 													RPAREN
-													M //2 label
-													Statement //3
+													M
+													Statement
 													{close_scope();}
-													IfElse //4
+													IfElse
 													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $7, $8, $10);}
-												|	N // branch
+												|	N
 													WHILE
 													{inside_while_counter++; open_scope();}
 													LPAREN
-													M // label
+													M
 													Exp
 													{check_matching_types("BOOL", $6->get_type());}
 													RPAREN
@@ -169,10 +166,10 @@ IfElse											: 	{$$ = new IfElseCls();}
 													%prec ASSIGN
 												| 	ELSE
 													{open_scope();}
-													N // branch
-													M // label
+													N
+													M
 													Statement
-													{close_scope(); $$ = new IfElseCls($3, $4, $5, false); }
+													{close_scope(); $$ = new IfElseCls($3, $4, $5, false);}
 ;
 
 Call											:	ID
