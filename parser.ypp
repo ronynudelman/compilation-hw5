@@ -97,19 +97,15 @@ FormalDecl										:	TypeAnnotation
 ;
 
 Statements										:	Statement
-													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENT, $1);}
 												|	Statements
-													M
-													{latest_label = $2->get_label();}
 													Statement
-													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENTS_STATEMENT, $1, $2, $4);}
 ;
 
 Statement										:	LBRACE
 													{open_scope();}
 													Statements
 													RBRACE
-													{close_scope(); $$ = new StatementCls(STATEMENT_TO_STATEMENTS, $3);}	// TODO : should we insert br label at the end of every statement?
+													{close_scope();}	// TODO : should we insert br label at the end of every statement?
 																															// TODO : before every new label, we must have br or ret commands
 												|	TypeAnnotation
 													Type
@@ -140,24 +136,25 @@ Statement										:	LBRACE
 												|	IF
 													{open_scope();}
 													LPAREN
-													Exp
+													Exp //1
 													{check_matching_types("BOOL", $4->get_type());}
 													RPAREN
-													M
-													Statement
-													N
+													M //2 label
+													Statement //3
 													{close_scope();}
-													IfElse
-													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $7, $8, $9, $11);}
-												|	WHILE
+													IfElse //4
+													{$$ = new StatementCls(STATEMETN_TO_IF, $4, $7, $8, $10);}
+												|	N // branch
+													WHILE
 													{inside_while_counter++; open_scope();}
 													LPAREN
+													M // label
 													Exp
-													{check_matching_types("BOOL", $4->get_type());}
+													{check_matching_types("BOOL", $6->get_type());}
 													RPAREN
 													M
 													Statement
-													{close_scope(); inside_while_counter--; $$ = new StatementCls(STATEMENT_TO_WHILE, $4, $7, $8);}
+													{close_scope(); inside_while_counter--; $$ = new StatementCls(STATEMENT_TO_WHILE, $1, $5, $6, $9, $10);}
 												|	BREAK
 													SC
 													{check_legal_break();}
@@ -172,9 +169,10 @@ IfElse											: 	{$$ = new IfElseCls();}
 													%prec ASSIGN
 												| 	ELSE
 													{open_scope();}
-													M
+													N // branch
+													M // label
 													Statement
-													{close_scope(); $$ = new IfElseCls($3, $4, false); }
+													{close_scope(); $$ = new IfElseCls($3, $4, $5, false); }
 ;
 
 Call											:	ID

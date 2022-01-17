@@ -14,7 +14,6 @@ ConstTable const_table;
 int inside_while_counter;
 CodeBuffer& code_buffer = CodeBuffer::instance();
 LocalVarsReg local_vars_reg;
-std::string latest_label;
 
 
 static bool is_type_starts_with_const(const std::string& type);

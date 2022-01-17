@@ -330,15 +330,12 @@ NCls::NCls() : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
 }
 
 
-StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5, AbsCls* cls6) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
     Register reg1;
     Register reg2;
-    if (op == STATEMENT_TO_STATEMENTS) {
-        nextlist = cls1->get_nextlist();
-    }
-    else if (op == STATEMENT_TO_TYPE_ID) {
+    if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
         code = reg1.get_name() + " = alloca i32";
         code_buffer.emit(code);
@@ -440,26 +437,50 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
     }
     else if (op == STATEMETN_TO_IF) {
-        if (cls5->get_is_empty()) {
+        if (cls4->get_is_empty()) {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
             nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
-            nextlist = CodeBuffer::merge(nextlist, cls4->get_nextlist());
+            // inserting branch and then label
+            // back patching the nextlist with this label
+            int last_branch_addr = code_buffer.emit("br label @");
+            pair<int,BranchLabelIndex> last_branch_fix;
+            last_branch_fix.first = last_branch_addr;
+            last_branch_fix.second = FIRST;
+            nextlist = CodeBuffer::merge(nextlist, CodeBuffer::makelist(last_branch_fix));
+            std::string final_label = code_buffer.genLabel();
+            code_buffer.bpatch(nextlist, final_label);
         }
         else {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
-            code_buffer.bpatch(cls1->get_falselist(), cls5->get_label());
-            nextlist = CodeBuffer::merge(cls3->get_nextlist(), cls5->get_nextlist());
-            nextlist = CodeBuffer::merge(nextlist, cls4->get_nextlist());
+            code_buffer.bpatch(cls1->get_falselist(), cls4->get_label());
+            nextlist = CodeBuffer::merge(cls3->get_nextlist(), cls4->get_nextlist());
+            // inserting branch and then label
+            // back patching the nextlist with this label
+            int last_branch_addr = code_buffer.emit("br label @");
+            pair<int,BranchLabelIndex> last_branch_fix;
+            last_branch_fix.first = last_branch_addr;
+            last_branch_fix.second = FIRST;
+            nextlist = CodeBuffer::merge(nextlist, CodeBuffer::makelist(last_branch_fix));
+            std::string final_label = code_buffer.genLabel();
+            code_buffer.bpatch(nextlist, final_label);
         }
     }
     else if (op == STATEMENT_TO_WHILE) {
-        // cls1 - exp
-        // cls2 - M (statement)
-        // cls3 - statement
-        code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
-        nextlist = cls1->get_falselist();
-        code_buffer.bpatch(cls3->get_nextlist(), latest_label);
-        code_buffer.emit("br label " + latest_label);
+        // cls1 - N
+        // cls2 - M (exp)
+        // cls3 - exp
+        // cls4 - M (statement)
+        // cls5 - statement
+        code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
+        code_buffer.bpatch(cls3->get_truelist(), cls4->get_label());
+        nextlist = cls3->get_falselist();
+        code_buffer.emit("br label " + cls2->get_label());
+        std::string final_label = code_buffer.genLabel();
+        code_buffer.bpatch(nextlist, final_label);
+
+        // std::string final_branch_label = code_buffer.genLabel();
+        // code_buffer.emit("br label " + cls2->get_label());
+        // code_buffer.bpatch(cls5->get_nextlist(), final_branch_label);
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
@@ -470,9 +491,12 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
 StatementsCls::StatementsCls(OPERATION_TYPE op,
                              AbsCls* cls1,
                              AbsCls* cls2,
-                             AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+                             AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), last_label(std::string()) {
     if (op == STATEMENTS_TO_STATEMENT) {
         nextlist = cls1->get_nextlist();
+        if (!cls1->get_label().empty()) {
+            last_label = cls1->get_label();
+        }
     }
     else if (op == STATEMENTS_TO_STATEMENTS_STATEMENT) {
         code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
@@ -481,11 +505,11 @@ StatementsCls::StatementsCls(OPERATION_TYPE op,
 }
 
 
-IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, bool is_empty) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), label(std::string()), is_empty(is_empty) {
-    if (cls2) {
-        nextlist = cls2->get_nextlist();
+IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, AbsCls* cls3, bool is_empty) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), label(std::string()), is_empty(is_empty) {
+    if (cls1 && cls3) {
+        nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls3->get_nextlist());
     }
-    if (cls1) {
-        label = cls1->get_label();
+    if (cls2) {
+        label = cls2->get_label();
     }
 }

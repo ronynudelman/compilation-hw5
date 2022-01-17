@@ -276,7 +276,8 @@ public:
                  AbsCls* cls2 = nullptr,
                  AbsCls* cls3 = nullptr,
                  AbsCls* cls4 = nullptr,
-                 AbsCls* cls5 = nullptr);
+                 AbsCls* cls5 = nullptr,
+                 AbsCls* cls6 = nullptr);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
 };
 
@@ -284,12 +285,14 @@ public:
 class StatementsCls : public AbsCls {
 private:
     std::vector<pair<int,BranchLabelIndex>> nextlist;
+    std::string last_label;
 public:
     StatementsCls(OPERATION_TYPE op = NONE,
                  AbsCls* cls1 = nullptr,
                  AbsCls* cls2 = nullptr,
                  AbsCls* cls3 = nullptr);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
+    std::string get_label() override { return last_label; }
 };
 
 
@@ -300,7 +303,7 @@ private:
     std::string label;
     bool is_empty;
 public:
-    IfElseCls(AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, bool is_empty = true);
+    IfElseCls(AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, AbsCls* cls3 = nullptr, bool is_empty = true);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
     std::string get_label() override { return label; }
     bool get_is_empty() override {return is_empty; }
