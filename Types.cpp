@@ -452,6 +452,15 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             nextlist = CodeBuffer::merge(nextlist, cls4->get_nextlist());
         }
     }
+    else if (op == STATEMENT_TO_WHILE) {
+        // cls1 - exp
+        // cls2 - M (statement)
+        // cls3 - statement
+        code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
+        nextlist = cls1->get_falselist();
+        code_buffer.bpatch(cls3->get_nextlist(), latest_label);
+        code_buffer.emit("br label " + latest_label);
+    }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
     }

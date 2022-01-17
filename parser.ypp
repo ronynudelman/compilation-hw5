@@ -63,7 +63,9 @@ FuncDecl										:	RetType
 													{add_func_to_symbol_table($2->get_name(), $1->get_name(), $4->get_args_types(), $2->get_yylineno());}
 													LBRACE
 													{open_scope(); add_func_args_to_symbol_table($4->get_args_types(), $4->get_args_names());}
-													Statements
+													Statements	// TODO : no one call backpatch to fix the last statement in Statements.
+																// TODO : Thus, we need to create a new label here with NOP and fix the last
+																// TODO : statement and make it just to this new label
 													RBRACE
 													{close_scope();}
 ;
@@ -98,15 +100,17 @@ Statements										:	Statement
 													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENT, $1);}
 												|	Statements
 													M
+													{latest_label = $2->get_label();}
 													Statement
-													{{$$ = new StatementsCls(STATEMENTS_TO_STATEMENTS_STATEMENT, $1, $2, $3);}}
+													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENTS_STATEMENT, $1, $2, $4);}
 ;
 
 Statement										:	LBRACE
 													{open_scope();}
 													Statements
 													RBRACE
-													{close_scope(); $$ = new StatementCls(STATEMENT_TO_STATEMENTS, $3);}
+													{close_scope(); $$ = new StatementCls(STATEMENT_TO_STATEMENTS, $3);}	// TODO : should we insert br label at the end of every statement?
+																															// TODO : before every new label, we must have br or ret commands
 												|	TypeAnnotation
 													Type
 													ID
@@ -151,8 +155,9 @@ Statement										:	LBRACE
 													Exp
 													{check_matching_types("BOOL", $4->get_type());}
 													RPAREN
+													M
 													Statement
-													{close_scope(); inside_while_counter--;}
+													{close_scope(); inside_while_counter--; $$ = new StatementCls(STATEMENT_TO_WHILE, $4, $7, $8);}
 												|	BREAK
 													SC
 													{check_legal_break();}
