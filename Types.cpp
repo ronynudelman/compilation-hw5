@@ -71,12 +71,42 @@ ExpCls::ExpCls(std::string type,
         nextlist = cls1->get_nextlist();
     }
     else if (op == EXP_TO_EXP_BINOP_MUL_EXP) {
-        code = reg.get_name() + " = ";
         if (cls3->get_value() == "*") {
+            code = reg.get_name() + " = ";
             code += "mul ";
         }
         else {
-            code += "sdiv ";
+            //checking division by 0.
+            Register temp_reg;
+            code = temp_reg.get_name() + " = icmp eq i32 ";
+            if (cls2->get_exp_case() == CONST_ID) {
+                code += cls2->get_value();
+            }
+            else {
+                code += cls2->get_reg();
+            }
+            code += ", 0";
+            code_buffer.emit(code);
+            code = "br i1 " + temp_reg.get_name() + ", label @, label @";
+            int br_addr = code_buffer.emit(code);
+            std::string true_label = code_buffer.genLabel();
+            //TODO: here will come Call for print
+            code_buffer.emit("CALL PRINT AND THEN CALL EXIT - DIVISION BY 0!");
+            std::string false_label = code_buffer.genLabel();
+            pair<int,BranchLabelIndex> new_pair;
+            new_pair.first = br_addr;
+            new_pair.second = FIRST;
+            code_buffer.bpatch(CodeBuffer::makelist(new_pair), true_label);
+            new_pair.second = SECOND;
+            code_buffer.bpatch(CodeBuffer::makelist(new_pair), false_label);
+            //the actual division.
+            code = reg.get_name() + " = ";
+            if (type.find("BYTE") != std::string::npos) {
+                code += "udiv ";
+            }
+            else {
+                code += "sdiv ";
+            }
         }
         code += size_by_type(type) + " ";
         if (cls1->get_exp_case() == CONST_ID) {
@@ -132,7 +162,7 @@ ExpCls::ExpCls(std::string type,
         }
         else {
             Register temp_reg;
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
             code = temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
             code = reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
@@ -172,8 +202,6 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_TRUE) {
         pair<int, BranchLabelIndex> list_item;
-        code = reg.get_name() + " = add i32 1, 0";
-        code_buffer.emit(code);
         int emit_result = code_buffer.emit("br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -181,8 +209,6 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_FALSE) {
         pair<int, BranchLabelIndex> list_item;
-        code = reg.get_name() + " = add i32 0, 0";
-        code_buffer.emit(code);
         int emit_result = code_buffer.emit("br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -330,12 +356,19 @@ NCls::NCls() : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
 }
 
 
-StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5, AbsCls* cls6) : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
+StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCls* cls3, AbsCls* cls4, AbsCls* cls5, AbsCls* cls6) :
+                           nextlist(std::vector<pair<int,BranchLabelIndex>>()),
+                           continue_list(std::vector<pair<int,BranchLabelIndex>>()),
+                           break_list(std::vector<pair<int,BranchLabelIndex>>()) {
     std::string code;
     std::string global_code;
     Register reg1;
     Register reg2;
-    if (op == STATEMENT_TO_TYPE_ID) {
+    if (op == STATEMENT_TO_STATEMENTS) {
+        continue_list = cls1->get_continue_list();
+        break_list = cls1->get_break_list();
+    }
+    else if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
         code = reg1.get_name() + " = alloca i32";
         code_buffer.emit(code);
@@ -417,14 +450,14 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
 
             code = reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
             code_buffer.emit(code);
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
             code = reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
             code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
             code_buffer.emit(code);
         }
         else {
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
             code = reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
             if (cls2->get_exp_case() == CONST_ID) {
@@ -437,6 +470,10 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
     }
     else if (op == STATEMETN_TO_IF) {
+        //     Exp 1
+        //     M 2
+        //     Statement 3
+        //     IfElse 4
         if (cls4->get_is_empty()) {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
             nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
@@ -449,6 +486,8 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             nextlist = CodeBuffer::merge(nextlist, CodeBuffer::makelist(last_branch_fix));
             std::string final_label = code_buffer.genLabel();
             code_buffer.bpatch(nextlist, final_label);
+            continue_list = cls3->get_continue_list();
+            break_list = cls3->get_break_list();
         }
         else {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
@@ -463,15 +502,40 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             nextlist = CodeBuffer::merge(nextlist, CodeBuffer::makelist(last_branch_fix));
             std::string final_label = code_buffer.genLabel();
             code_buffer.bpatch(nextlist, final_label);
+            continue_list = CodeBuffer::merge(cls3->get_continue_list(), cls4->get_continue_list());
+            break_list = CodeBuffer::merge(cls3->get_break_list(), cls4->get_break_list());
         }
     }
     else if (op == STATEMENT_TO_WHILE) {
+        // N - 1
+        // M - 2
+        // Exp - 3
+        // M - 4
+        // Statement - 5
         code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
         code_buffer.bpatch(cls3->get_truelist(), cls4->get_label());
         nextlist = cls3->get_falselist();
-        code_buffer.emit("br label " + cls2->get_label());
+        code_buffer.emit("br label %" + cls2->get_label());
         std::string final_label = code_buffer.genLabel();
         code_buffer.bpatch(nextlist, final_label);
+        code_buffer.bpatch(cls5->get_continue_list(), cls2->get_label());
+        code_buffer.bpatch(cls5->get_break_list(), final_label);
+    }
+    else if (op == STATEMENT_TO_CONTINUE){
+        int br_addr = code_buffer.emit("br label @");
+        code_buffer.genLabel();
+        pair<int,BranchLabelIndex> continue_branch;
+        continue_branch.first = br_addr;
+        continue_branch.second = FIRST;
+        continue_list = CodeBuffer::makelist(continue_branch);
+    }
+    else if (op == STATEMENT_TO_BREAK){
+        int br_addr = code_buffer.emit("br label @");
+        code_buffer.genLabel();
+        pair<int,BranchLabelIndex> break_branch;
+        break_branch.first = br_addr;
+        break_branch.second = FIRST;
+        break_list = CodeBuffer::makelist(break_branch);
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;
@@ -482,25 +546,28 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
 StatementsCls::StatementsCls(OPERATION_TYPE op,
                              AbsCls* cls1,
                              AbsCls* cls2,
-                             AbsCls* cls3) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), last_label(std::string()) {
+                             AbsCls* cls3) : continue_list(std::vector<pair<int,BranchLabelIndex>>()),  break_list(std::vector<pair<int,BranchLabelIndex>>()) {
     if (op == STATEMENTS_TO_STATEMENT) {
-        nextlist = cls1->get_nextlist();
-        if (!cls1->get_label().empty()) {
-            last_label = cls1->get_label();
-        }
+        continue_list = cls1->get_continue_list();
+        break_list = cls1->get_break_list();
     }
     else if (op == STATEMENTS_TO_STATEMENTS_STATEMENT) {
-        code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
-        nextlist = cls3->get_nextlist();
+        continue_list = CodeBuffer::merge(cls1->get_continue_list(), cls2->get_continue_list());
+        break_list = CodeBuffer::merge(cls1->get_break_list(), cls2->get_break_list());
     }
 }
 
 
-IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, AbsCls* cls3, bool is_empty) : nextlist(std::vector<pair<int,BranchLabelIndex>>()), label(std::string()), is_empty(is_empty) {
-    if (cls1 && cls3) {
-        nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls3->get_nextlist());
-    }
-    if (cls2) {
+IfElseCls::IfElseCls(AbsCls* cls1, AbsCls* cls2, AbsCls* cls3, bool is_empty) :
+                     nextlist(std::vector<pair<int,BranchLabelIndex>>()),
+                     continue_list(std::vector<pair<int,BranchLabelIndex>>()),
+                     break_list(std::vector<pair<int,BranchLabelIndex>>()),
+                     label(std::string()),
+                     is_empty(is_empty) {
+    if (cls1 && cls2 && cls3) {
         label = cls2->get_label();
+        nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls3->get_nextlist());
+        continue_list = cls3->get_continue_list();
+        break_list = cls3->get_break_list();
     }
 }

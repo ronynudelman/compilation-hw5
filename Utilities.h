@@ -38,6 +38,7 @@ void assert_not_void(std::string ret_type);
 void check_legal_break();
 void check_legal_continue();
 void check_byte_range(std::string value);
-
+void declare_standart_functions();
+void declare_divion_error_str();
 
 #endif // UTILITIES_H_

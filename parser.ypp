@@ -44,13 +44,13 @@
 %%
 
 
-Program											:	{inside_while_counter = 0;}
+Program											:	{inside_while_counter = 0; declare_standart_functions(); declare_divion_error_str();}
 													Funcs
 													{check_main_exist(); close_scope(); code_buffer.printGlobalBuffer(); code_buffer.printCodeBuffer();}
 ;
 
 Funcs											:	/*epsilon*/
-														{if (yychar != YYEOF) yyerror("not EOF");}
+													{if (yychar != YYEOF) yyerror("not EOF");}
 												|	FuncDecl
 													Funcs
 ;
@@ -95,15 +95,17 @@ FormalDecl										:	TypeAnnotation
 ;
 
 Statements										:	Statement
+													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENT, $1);}
 												|	Statements
 													Statement
+													{$$ = new StatementsCls(STATEMENTS_TO_STATEMENTS_STATEMENT, $1, $2);}
 ;
 
 Statement										:	LBRACE
 													{open_scope();}
 													Statements
 													RBRACE
-													{close_scope();}
+													{close_scope(); $$ = new StatementCls(STATEMENT_TO_STATEMENTS, $3);}
 												|	TypeAnnotation
 													Type
 													ID
@@ -154,10 +156,10 @@ Statement										:	LBRACE
 													{close_scope(); inside_while_counter--; $$ = new StatementCls(STATEMENT_TO_WHILE, $1, $5, $6, $9, $10);}
 												|	BREAK
 													SC
-													{check_legal_break();}
+													{check_legal_break(); $$ = new StatementCls(STATEMENT_TO_BREAK);}
 												|	CONTINUE
 													SC
-													{check_legal_continue();}
+													{check_legal_continue(); $$ = new StatementCls(STATEMENT_TO_CONTINUE);}
 ;
 
 IfElse											: 	{$$ = new IfElseCls();}

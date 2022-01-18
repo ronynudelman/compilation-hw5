@@ -34,7 +34,9 @@ enum OPERATION_TYPE {
     STATEMENT_TO_TYPE_ID_EXP,
     STATEMENT_TO_ID_EXP,
     STATEMENTS_TO_STATEMENT,
-    STATEMENTS_TO_STATEMENTS_STATEMENT
+    STATEMENTS_TO_STATEMENTS_STATEMENT,
+    STATEMENT_TO_CONTINUE,
+    STATEMENT_TO_BREAK
 };
 
 
@@ -64,6 +66,8 @@ public:
   virtual std::string get_label() { std::cerr << "15 Unexpected error" << std::endl; exit(1); return std::string(); }
   virtual ExpCase get_exp_case() { std::cerr << "16 Unexpected error" << std::endl; exit(1); return REGULAR; }
   virtual bool get_is_empty() { std::cerr << "17 Unexpected error" << std::endl; exit(1); return true; }
+  virtual std::vector<pair<int,BranchLabelIndex>> get_continue_list() { std::cerr << "18 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
+  virtual std::vector<pair<int,BranchLabelIndex>> get_break_list() { std::cerr << "19 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual ~AbsCls() = default;
 };
 
@@ -270,6 +274,8 @@ public:
 class StatementCls : public AbsCls {
 private:
     std::vector<pair<int,BranchLabelIndex>> nextlist;
+    std::vector<pair<int,BranchLabelIndex>> continue_list;
+    std::vector<pair<int,BranchLabelIndex>> break_list;
 public:
     StatementCls(OPERATION_TYPE op = NONE,
                  AbsCls* cls1 = nullptr,
@@ -279,20 +285,22 @@ public:
                  AbsCls* cls5 = nullptr,
                  AbsCls* cls6 = nullptr);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
+    std::vector<pair<int,BranchLabelIndex>> get_continue_list() override { return continue_list; }
+    std::vector<pair<int,BranchLabelIndex>> get_break_list() override { return break_list; }
 };
 
 
 class StatementsCls : public AbsCls {
 private:
-    std::vector<pair<int,BranchLabelIndex>> nextlist;
-    std::string last_label;
+    std::vector<pair<int,BranchLabelIndex>> continue_list;
+    std::vector<pair<int,BranchLabelIndex>> break_list;
 public:
     StatementsCls(OPERATION_TYPE op = NONE,
                  AbsCls* cls1 = nullptr,
                  AbsCls* cls2 = nullptr,
                  AbsCls* cls3 = nullptr);
-    std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
-    std::string get_label() override { return last_label; }
+    std::vector<pair<int,BranchLabelIndex>> get_continue_list() override { return continue_list; }
+    std::vector<pair<int,BranchLabelIndex>> get_break_list() override { return break_list; }
 };
 
 
@@ -300,11 +308,15 @@ public:
 class IfElseCls : public AbsCls {
 private:
     std::vector<pair<int,BranchLabelIndex>> nextlist;
+    std::vector<pair<int,BranchLabelIndex>> continue_list;
+    std::vector<pair<int,BranchLabelIndex>> break_list;
     std::string label;
     bool is_empty;
 public:
     IfElseCls(AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr, AbsCls* cls3 = nullptr, bool is_empty = true);
     std::vector<pair<int,BranchLabelIndex>> get_nextlist() override { return nextlist; }
+    std::vector<pair<int,BranchLabelIndex>> get_continue_list() override { return continue_list; }
+    std::vector<pair<int,BranchLabelIndex>> get_break_list() override { return break_list; }
     std::string get_label() override { return label; }
     bool get_is_empty() override {return is_empty; }
 };

@@ -307,3 +307,13 @@ void check_byte_range(std::string value) {
 		exit(1);
 	}
 }
+
+
+void declare_standart_functions() {
+	code_buffer.emitGlobal("declare i32 @printf(i8*, ...)");
+	code_buffer.emitGlobal("declare void @exit(i32)");
+}
+
+void declare_divion_error_str() {
+	code_buffer.emitGlobal("@.div_error = internal constant [23 x i8] c\"Error division by zero\\00\"");
+}
