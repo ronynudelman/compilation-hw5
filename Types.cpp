@@ -60,10 +60,10 @@ ExpCls::ExpCls(std::string type,
     std::string global_code;
     if (op == EXP_TO_LPAREN_EXP_RPAREN) {
         if (cls1->get_exp_case() == CONST_ID) {
-            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
         }
         else {
-            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
         }
         code_buffer.emit(code);
         truelist = cls1->get_truelist();
@@ -72,13 +72,13 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_EXP_BINOP_MUL_EXP) {
         if (cls3->get_value() == "*") {
-            code = reg.get_name() + " = ";
+            code = "    " + reg.get_name() + " = ";
             code += "mul ";
         }
         else {
             //checking division by 0.
             Register temp_reg;
-            code = temp_reg.get_name() + " = icmp eq i32 ";
+            code = "    " + temp_reg.get_name() + " = icmp eq i32 ";
             if (cls2->get_exp_case() == CONST_ID) {
                 code += cls2->get_value();
             }
@@ -87,11 +87,11 @@ ExpCls::ExpCls(std::string type,
             }
             code += ", 0";
             code_buffer.emit(code);
-            code = "br i1 " + temp_reg.get_name() + ", label @, label @";
+            code = "    br i1 " + temp_reg.get_name() + ", label @, label @";
             int br_addr = code_buffer.emit(code);
             std::string true_label = code_buffer.genLabel();
             //TODO: here will come Call for print
-            code_buffer.emit("CALL PRINT AND THEN CALL EXIT - DIVISION BY 0!");
+            code_buffer.emit("  CALL PRINT AND THEN CALL EXIT - DIVISION BY 0!");
             std::string false_label = code_buffer.genLabel();
             pair<int,BranchLabelIndex> new_pair;
             new_pair.first = br_addr;
@@ -100,7 +100,7 @@ ExpCls::ExpCls(std::string type,
             new_pair.second = SECOND;
             code_buffer.bpatch(CodeBuffer::makelist(new_pair), false_label);
             //the actual division.
-            code = reg.get_name() + " = ";
+            code = "    " + reg.get_name() + " = ";
             if (type.find("BYTE") != std::string::npos) {
                 code += "udiv ";
             }
@@ -128,7 +128,7 @@ ExpCls::ExpCls(std::string type,
         nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
     }
     else if (op == EXP_TO_EXP_BINOP_ADD_EXP) {
-        code = reg.get_name() + " = ";
+        code = "    " + reg.get_name() + " = ";
         if (cls3->get_value() == "+") {
             code += "add ";
         }
@@ -163,17 +163,17 @@ ExpCls::ExpCls(std::string type,
         else {
             Register temp_reg;
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code = "    " + temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
-            code = reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
+            code = "    " + reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
             code_buffer.emit(code);
         }
         std::string var = id_value.empty() ? reg.get_name() : id_value;
         if (type.find("BOOL") != std::string::npos) {
             Register temp_reg;
-            code = temp_reg.get_name() + " = icmp eq i32 " + var + ", 1";
+            code = "    " + temp_reg.get_name() + " = icmp eq i32 " + var + ", 1";
             code_buffer.emit(code);
-            code = "br i1 " + temp_reg.get_name() + ", label @, label @";
+            code = "    br i1 " + temp_reg.get_name() + ", label @, label @";
             int emit_result = code_buffer.emit(code);
             pair<int, BranchLabelIndex> list_item;
             list_item.first = emit_result;
@@ -184,32 +184,32 @@ ExpCls::ExpCls(std::string type,
         }
     }
     else if (op == EXP_TO_NUM) {
-        code = reg.get_name() + " = add i32 " + value + ", 0";
+        code = "    " + reg.get_name() + " = add i32 " + value + ", 0";
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_NUM_B) {
         Register temp_reg;
-        code = temp_reg.get_name() + " = zext i8 " + value + " to i32";
+        code = "    " + temp_reg.get_name() + " = zext i8 " + value + " to i32";
         code_buffer.emit(code);
-        code = reg.get_name() + " = add i32 " + temp_reg.get_name() + ", 0";
+        code = "    " + reg.get_name() + " = add i32 " + temp_reg.get_name() + ", 0";
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_STRING) {
         global_code = "@." + cls1->get_str_gen_name() + " = internal constant [" + cls1->get_size() + " x i8] c\"" + cls1->get_value() + "\\00\"";
-        code = reg.get_name() + " = getelementptr ([" + cls1->get_size() + " x i8], [" + cls1->get_size() + " x i8]* @." + cls1->get_str_gen_name() + ", i32 0, i32 0)";
+        code = "    " + reg.get_name() + " = getelementptr ([" + cls1->get_size() + " x i8], [" + cls1->get_size() + " x i8]* @." + cls1->get_str_gen_name() + ", i32 0, i32 0)";
         code_buffer.emitGlobal(global_code);
         code_buffer.emit(code);
     }
     else if (op == EXP_TO_TRUE) {
         pair<int, BranchLabelIndex> list_item;
-        int emit_result = code_buffer.emit("br label @");
+        int emit_result = code_buffer.emit("    br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
         truelist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_FALSE) {
         pair<int, BranchLabelIndex> list_item;
-        int emit_result = code_buffer.emit("br label @");
+        int emit_result = code_buffer.emit("    br label @");
         list_item.first = emit_result;
         list_item.second = FIRST;
         falselist = CodeBuffer::makelist(list_item);
@@ -229,7 +229,7 @@ ExpCls::ExpCls(std::string type,
         falselist = cls2->get_falselist();
     }
     else if (op == EXP_TO_EXP_RELOP_COMPARE_EXP) {
-        code = reg.get_name() + " = icmp ";
+        code = "    " + reg.get_name() + " = icmp ";
         if (cls3->get_value() == "<") {
             code += "slt ";
         }
@@ -257,7 +257,7 @@ ExpCls::ExpCls(std::string type,
             code += cls2->get_reg();
         }
         code_buffer.emit(code);
-        code = "br i1 " + reg.get_name() + ", label @, label @";
+        code = "    br i1 " + reg.get_name() + ", label @, label @";
         int emit_result = code_buffer.emit(code);
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
@@ -267,7 +267,7 @@ ExpCls::ExpCls(std::string type,
         falselist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_EXP_RELOP_EQUAL_EXP) {
-        code = reg.get_name() + " = icmp ";
+        code = "    " + reg.get_name() + " = icmp ";
         if (cls3->get_value() == "==") {
             code += "eq ";
         }
@@ -289,7 +289,7 @@ ExpCls::ExpCls(std::string type,
             code += cls2->get_reg();
         }
         code_buffer.emit(code);
-        code = "br i1 " + reg.get_name() + ", label @, label @";
+        code = "    br i1 " + reg.get_name() + ", label @, label @";
         int emit_result = code_buffer.emit(code);
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
@@ -300,10 +300,10 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_CAST) {
         if (cls1->get_exp_case() == CONST_ID) {
-            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
         }
         else {
-            code = reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
         }
         code_buffer.emit(code);
     }
@@ -350,7 +350,7 @@ MCls::MCls() : label(code_buffer.genLabel()) {}
 
 NCls::NCls() : nextlist(std::vector<pair<int,BranchLabelIndex>>()) {
     pair<int,BranchLabelIndex> new_pair;
-    new_pair.first = code_buffer.emit("br label @");
+    new_pair.first = code_buffer.emit(" br label @");
     new_pair.second = FIRST;
     nextlist = CodeBuffer::makelist(new_pair);
 }
@@ -370,9 +370,9 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     }
     else if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
-        code = reg1.get_name() + " = alloca i32";
+        code = "    " + reg1.get_name() + " = alloca i32";
         code_buffer.emit(code);
-        code = "store i32 0, i32* " + reg1.get_name();
+        code = "    store i32 0, i32* " + reg1.get_name();
         code_buffer.emit(code);
     }
     else if (op == STATEMENT_TO_TYPE_ID_EXP) {
@@ -384,7 +384,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             if (cls3->get_type().find("BOOL") != std::string::npos) {
                 std::string true_label = code_buffer.genLabel();
                 code_buffer.bpatch(cls3->get_truelist(), true_label);
-                code = "br label @";
+                code = "    br label @";
                 int true_label_addr = code_buffer.emit(code);
                 pair<int,BranchLabelIndex> true_label_pair;
                 true_label_pair.first = true_label_addr;
@@ -392,7 +392,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
 
                 std::string false_label = code_buffer.genLabel();
                 code_buffer.bpatch(cls3->get_falselist(), false_label);
-                code = "br label @";
+                code = "    br label @";
                 int false_label_addr = code_buffer.emit(code);
                 pair<int,BranchLabelIndex> false_label_pair;
                 false_label_pair.first = false_label_addr;
@@ -404,21 +404,21 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
                 std::string final_label = code_buffer.genLabel();
                 code_buffer.bpatch(branches_to_patch, final_label);
 
-                code = reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+                code = "    " + reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
                 code_buffer.emit(code);
-                code = reg2.get_name() + " = alloca i32";
+                code = "    " + reg2.get_name() + " = alloca i32";
                 code_buffer.emit(code);
-                code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
+                code = "    store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
                 code_buffer.emit(code);
             }
             else {
-                code = reg1.get_name() + " = alloca i32";
+                code = "    " + reg1.get_name() + " = alloca i32";
                 code_buffer.emit(code);
                 if (cls3->get_exp_case() == CONST_ID) {
-                    code = "store i32 " + cls3->get_value() + ", i32* " + reg1.get_name();
+                    code = "    store i32 " + cls3->get_value() + ", i32* " + reg1.get_name();
                 }
                 else {
-                    code = "store i32 " + cls3->get_reg() + ", i32* " + reg1.get_name();
+                    code = "    store i32 " + cls3->get_reg() + ", i32* " + reg1.get_name();
                 }
                 code_buffer.emit(code);
             }
@@ -428,7 +428,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         if (cls2->get_type().find("BOOL") != std::string::npos) {
             std::string true_label = code_buffer.genLabel();
             code_buffer.bpatch(cls2->get_truelist(), true_label);
-            code = "br label @";
+            code = "    br label @";
             int true_label_addr = code_buffer.emit(code);
             pair<int,BranchLabelIndex> true_label_pair;
             true_label_pair.first = true_label_addr;
@@ -436,7 +436,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
 
             std::string false_label = code_buffer.genLabel();
             code_buffer.bpatch(cls2->get_falselist(), false_label);
-            code = "br label @";
+            code = "    br label @";
             int false_label_addr = code_buffer.emit(code);
             pair<int,BranchLabelIndex> false_label_pair;
             false_label_pair.first = false_label_addr;
@@ -448,23 +448,23 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             std::string final_label = code_buffer.genLabel();
             code_buffer.bpatch(branches_to_patch, final_label);
 
-            code = reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+            code = "    " + reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
             code_buffer.emit(code);
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code = "    " + reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
-            code = "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
+            code = "    store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
             code_buffer.emit(code);
         }
         else {
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
+            code = "    " + reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
             code_buffer.emit(code);
             if (cls2->get_exp_case() == CONST_ID) {
-                code = "store i32 " + cls2->get_value() + ", i32* " + reg1.get_name();
+                code = "    store i32 " + cls2->get_value() + ", i32* " + reg1.get_name();
             }
             else {
-                code = "store i32 " + cls2->get_reg() + ", i32* " + reg1.get_name();
+                code = "    store i32 " + cls2->get_reg() + ", i32* " + reg1.get_name();
             }
             code_buffer.emit(code);
         }
@@ -479,7 +479,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
             // inserting branch and then label
             // back patching the nextlist with this label
-            int last_branch_addr = code_buffer.emit("br label @");
+            int last_branch_addr = code_buffer.emit("   br label @");
             pair<int,BranchLabelIndex> last_branch_fix;
             last_branch_fix.first = last_branch_addr;
             last_branch_fix.second = FIRST;
@@ -495,7 +495,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             nextlist = CodeBuffer::merge(cls3->get_nextlist(), cls4->get_nextlist());
             // inserting branch and then label
             // back patching the nextlist with this label
-            int last_branch_addr = code_buffer.emit("br label @");
+            int last_branch_addr = code_buffer.emit("   br label @");
             pair<int,BranchLabelIndex> last_branch_fix;
             last_branch_fix.first = last_branch_addr;
             last_branch_fix.second = FIRST;
@@ -515,14 +515,14 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
         code_buffer.bpatch(cls3->get_truelist(), cls4->get_label());
         nextlist = cls3->get_falselist();
-        code_buffer.emit("br label %" + cls2->get_label());
+        code_buffer.emit("  br label %" + cls2->get_label());
         std::string final_label = code_buffer.genLabel();
         code_buffer.bpatch(nextlist, final_label);
         code_buffer.bpatch(cls5->get_continue_list(), cls2->get_label());
         code_buffer.bpatch(cls5->get_break_list(), final_label);
     }
     else if (op == STATEMENT_TO_CONTINUE){
-        int br_addr = code_buffer.emit("br label @");
+        int br_addr = code_buffer.emit("    br label @");
         code_buffer.genLabel();
         pair<int,BranchLabelIndex> continue_branch;
         continue_branch.first = br_addr;
@@ -530,7 +530,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         continue_list = CodeBuffer::makelist(continue_branch);
     }
     else if (op == STATEMENT_TO_BREAK){
-        int br_addr = code_buffer.emit("br label @");
+        int br_addr = code_buffer.emit("    br label @");
         code_buffer.genLabel();
         pair<int,BranchLabelIndex> break_branch;
         break_branch.first = br_addr;

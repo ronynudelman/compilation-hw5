@@ -40,5 +40,7 @@ void check_legal_continue();
 void check_byte_range(std::string value);
 void declare_standart_functions();
 void declare_divion_error_str();
+void emit_default_return(std::string ret_type);
+void emit_define_function(std::string ret_type, std::string func_name, std::vector<std::string> args_types);
 
 #endif // UTILITIES_H_

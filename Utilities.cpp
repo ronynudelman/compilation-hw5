@@ -59,8 +59,7 @@ std::string size_by_type(std::string type) {
 		return "i8";
 	}
 	else {
-		std::cerr << "TYPE ERROR" << std::endl;
-		return "i0";
+		return "void";
 	}
 }
 
@@ -316,4 +315,30 @@ void declare_standart_functions() {
 
 void declare_divion_error_str() {
 	code_buffer.emitGlobal("@.div_error = internal constant [23 x i8] c\"Error division by zero\\00\"");
+}
+
+
+void emit_default_return(std::string ret_type) {
+	if (ret_type == "VOID") {
+		code_buffer.emit("	ret void");
+	}
+	else {
+		code_buffer.emit("	ret " + size_by_type(ret_type) + " 0");
+	}
+	code_buffer.emit("}");
+}
+
+
+void emit_define_function(std::string ret_type, std::string func_name, std::vector<std::string> args_types) {
+	//define i32 @main() {   ; i32()*
+	std::string code;
+	code = "define " + size_by_type(ret_type) + " @" + func_name + "(";
+	for (std::vector<std::string>::iterator it = args_types.begin(); it != args_types.end(); ++it) {
+		code += size_by_type((*it)) + ", ";
+	}
+	if (!args_types.empty()) {
+		code = code.substr(0, code.size() - 2);
+	}
+	code += ") {";
+	code_buffer.emit(code);
 }
