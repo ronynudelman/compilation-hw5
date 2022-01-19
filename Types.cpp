@@ -158,20 +158,23 @@ ExpCls::ExpCls(std::string type,
             this->value = id_value;
         }
         else {
-            Register temp_reg;
+            Register addr_calc_reg;
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = "    " + temp_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-            code_buffer.emit(code);
-            code = "    " + reg.get_name() + " = load i32, i32* " + temp_reg.get_name();
-            code_buffer.emit(code);
+            code_buffer.emit("    " + addr_calc_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name());
+            if (size_by_type(type) != "i32") {
+                Register ext_reg;
+                code_buffer.emit("    " + ext_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+                code_buffer.emit("    " + reg.get_name() + " = trunc i32 " + ext_reg.get_name() + " to " + size_by_type(type));
+            }
+            else {
+                code_buffer.emit("    " + reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+            }
         }
-        std::string var = id_value.empty() ? reg.get_name() : id_value;
         if (type.find("BOOL") != std::string::npos) {
+            std::string bool_var = id_value.empty() ? reg.get_name() : id_value;
             Register temp_reg;
-            code = "    " + temp_reg.get_name() + " = icmp eq i32 " + var + ", 1";
-            code_buffer.emit(code);
-            code = "    br i1 " + temp_reg.get_name() + ", label @, label @";
-            int emit_result = code_buffer.emit(code);
+            code_buffer.emit("    " + temp_reg.get_name() + " = icmp eq i1 " + bool_var + ", 1");
+            int emit_result = code_buffer.emit("    br i1 " + temp_reg.get_name() + ", label @, label @");
             pair<int, BranchLabelIndex> list_item;
             list_item.first = emit_result;
             list_item.second = FIRST;
@@ -221,6 +224,22 @@ ExpCls::ExpCls(std::string type,
         falselist = cls2->get_falselist();
     }
     else if (op == EXP_TO_EXP_RELOP_COMPARE_EXP) {
+        // the operands will be the actual strings in the compare command
+        std::string operand_1 = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+        std::string operand_2 = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+        // check if we need to extent one of the registers
+        if (size_by_type(cls1->get_type()) != size_by_type(cls2->get_type())) {
+            if (size_by_type(cls1->get_type()) == "i8" && cls1->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_1 + " to i32");
+                operand_1 = ext_reg.get_name();
+            }
+            else if (size_by_type(cls2->get_type()) == "i8" && cls2->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_2 + " to i32");
+                operand_2 = ext_reg.get_name();
+            }
+        }
         code = "    " + reg.get_name() + " = icmp ";
         if (cls3->get_value() == "<") {
             code += "slt ";
@@ -234,23 +253,9 @@ ExpCls::ExpCls(std::string type,
         else { // (cls3->get_value() == ">=")
             code += "sge ";
         }
-        code += size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " ";
-        if (cls1->get_exp_case() == CONST_ID) {
-            code += cls1->get_value();
-        }
-        else {
-            code += cls1->get_reg();
-        }
-        code += ", ";
-        if (cls2->get_exp_case() == CONST_ID) {
-            code += cls2->get_value();
-        }
-        else {
-            code += cls2->get_reg();
-        }
+        code += size_by_type(handle_binop_exp(cls1->get_type(), cls2->get_type())) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
-        code = "    br i1 " + reg.get_name() + ", label @, label @";
-        int emit_result = code_buffer.emit(code);
+        int emit_result = code_buffer.emit("    br i1 " + reg.get_name() + ", label @, label @");
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -259,6 +264,22 @@ ExpCls::ExpCls(std::string type,
         falselist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_EXP_RELOP_EQUAL_EXP) {
+        // the operands will be the actual strings in the compare command
+        std::string operand_1 = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+        std::string operand_2 = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+        // check if we need to extent one of the registers
+        if (size_by_type(cls1->get_type()) != size_by_type(cls2->get_type())) {
+            if (size_by_type(cls1->get_type()) == "i8" && cls1->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_1 + " to i32");
+                operand_1 = ext_reg.get_name();
+            }
+            else if (size_by_type(cls2->get_type()) == "i8" && cls2->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_2 + " to i32");
+                operand_2 = ext_reg.get_name();
+            }
+        }
         code = "    " + reg.get_name() + " = icmp ";
         if (cls3->get_value() == "==") {
             code += "eq ";
@@ -266,23 +287,9 @@ ExpCls::ExpCls(std::string type,
         else { // (cls3->get_value() == "!=")
             code += "ne ";
         }
-        code += size_by_type(handle_binop_exp(cls1->get_type(),cls2->get_type())) + " ";
-        if (cls1->get_exp_case() == CONST_ID) {
-            code += cls1->get_value();
-        }
-        else {
-            code += cls1->get_reg();
-        }
-        code += ", ";
-        if (cls2->get_exp_case() == CONST_ID) {
-            code += cls2->get_value();
-        }
-        else {
-            code += cls2->get_reg();
-        }
+        code += size_by_type(handle_binop_exp(cls1->get_type(), cls2->get_type())) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
-        code = "    br i1 " + reg.get_name() + ", label @, label @";
-        int emit_result = code_buffer.emit(code);
+        int emit_result = code_buffer.emit("    br i1 " + reg.get_name() + ", label @, label @");
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -291,13 +298,18 @@ ExpCls::ExpCls(std::string type,
         falselist = CodeBuffer::makelist(list_item);
     }
     else if (op == EXP_TO_CAST) {
-        if (cls1->get_exp_case() == CONST_ID) {
-            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+        if (size_by_type(type) == size_by_type(cls1->get_type())) {
+            std::string src_operand = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+            code_buffer.emit("   " + reg.get_name() + " = add " + size_by_type(type) + " " + src_operand + ", 0");
         }
-        else {
-            code = "    " + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+        else if (size_by_type(type) == "i8" && size_by_type(cls1->get_type()) == "i32") {
+            std::string src_operand = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+            code_buffer.emit("   " + reg.get_name() + " = trunc i32 " + src_operand + " to i8");
         }
-        code_buffer.emit(code);
+         else if (size_by_type(type) == "i32" && size_by_type(cls1->get_type()) == "i8") {
+             std::string src_operand = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+             code_buffer.emit("   " + reg.get_name() + " = zext i8 " + src_operand + " to i32");
+         }
     }
     else {
         std::cerr << "EXP OPERATION_TYPE ERROR!" << std::endl;
@@ -396,7 +408,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
                 std::string final_label = code_buffer.genLabel();
                 code_buffer.bpatch(branches_to_patch, final_label);
 
-                code = "    " + reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+                code = "    " + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]";
                 code_buffer.emit(code);
                 code = "    " + reg2.get_name() + " = alloca i32";
                 code_buffer.emit(code);
@@ -440,7 +452,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             std::string final_label = code_buffer.genLabel();
             code_buffer.bpatch(branches_to_patch, final_label);
 
-            code = "    " + reg1.get_name() + " = phi i32 [1, " + true_label + "], [0, " + false_label + "]";
+            code = "    " + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]";
             code_buffer.emit(code);
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
             code = "    " + reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
