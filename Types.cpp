@@ -71,24 +71,31 @@ ExpCls::ExpCls(std::string type,
         nextlist = cls1->get_nextlist();
     }
     else if (op == EXP_TO_EXP_BINOP_MUL_EXP) {
-        if (cls3->get_value() == "*") {
-            code = "    " + reg.get_name() + " = ";
-            code += "mul ";
+        // the operands will be the actual strings in the mul/div command
+        std::string operand_1 = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+        std::string operand_2 = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+        // check if we need to extent one of the registers
+        if (size_by_type(cls1->get_type()) != size_by_type(cls2->get_type())) {
+            if (size_by_type(cls1->get_type()) == "i8" && cls1->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_1 + " to i32");
+                operand_1 = ext_reg.get_name();
+            }
+            else if (size_by_type(cls2->get_type()) == "i8" && cls2->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_2 + " to i32");
+                operand_2 = ext_reg.get_name();
+            }
         }
-        else {
-            //checking division by 0.
+        // prepare the mul/div commands
+        if (cls3->get_value() == "*") {
+            code = "    " + reg.get_name() + " = mul ";
+        }
+        else { // cls3->get_value() == "/"
+            // checking division by 0.
             Register temp_reg;
-            code = "    " + temp_reg.get_name() + " = icmp eq i32 ";
-            if (cls2->get_exp_case() == CONST_ID) {
-                code += cls2->get_value();
-            }
-            else {
-                code += cls2->get_reg();
-            }
-            code += ", 0";
-            code_buffer.emit(code);
-            code = "    br i1 " + temp_reg.get_name() + ", label @, label @";
-            int br_addr = code_buffer.emit(code);
+            code_buffer.emit("    " + temp_reg.get_name() + " = icmp eq " + size_by_type(cls2->get_type()) + " " + operand_2 + ", 0");
+            int br_addr = code_buffer.emit("    br i1 " + temp_reg.get_name() + ", label @, label @");
             std::string true_label = code_buffer.genLabel();
             //TODO: here will come Call for print
             code_buffer.emit("  CALL PRINT AND THEN CALL EXIT - DIVISION BY 0!");
@@ -108,47 +115,37 @@ ExpCls::ExpCls(std::string type,
                 code += "sdiv ";
             }
         }
-        code += size_by_type(type) + " ";
-        if (cls1->get_exp_case() == CONST_ID) {
-            code += cls1->get_value();
-        }
-        else {
-            code += cls1->get_reg();
-        }
-        code += ", ";
-        if (cls2->get_exp_case() == CONST_ID) {
-            code += cls2->get_value();
-        }
-        else {
-            code += cls2->get_reg();
-        }
+        code += size_by_type(type) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
         truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
         falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
         nextlist = CodeBuffer::merge(cls1->get_nextlist(), cls2->get_nextlist());
     }
     else if (op == EXP_TO_EXP_BINOP_ADD_EXP) {
-        code = "    " + reg.get_name() + " = ";
+        // the operands will be the actual strings in the add/sub command
+        std::string operand_1 = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
+        std::string operand_2 = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+        // check if we need to extent one of the registers
+        if (size_by_type(cls1->get_type()) != size_by_type(cls2->get_type())) {
+            if (size_by_type(cls1->get_type()) == "i8" && cls1->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_1 + " to i32");
+                operand_1 = ext_reg.get_name();
+            }
+            else if (size_by_type(cls2->get_type()) == "i8" && cls2->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(ext_reg.get_name() + " = zext i8 " + operand_2 + " to i32");
+                operand_2 = ext_reg.get_name();
+            }
+        }
+        // prepare the add/sub commands
         if (cls3->get_value() == "+") {
-            code += "add ";
+            code = "    " + reg.get_name() + " = add ";
         }
-        else {
-            code += "sub ";
+        else { // cls3->get_value() == "-"
+            code = "    " + reg.get_name() + " = sub ";
         }
-        code += size_by_type(type) + " ";
-        if (cls1->get_exp_case() == CONST_ID) {
-            code += cls1->get_value();
-        }
-        else {
-            code += cls1->get_reg();
-        }
-        code += ", ";
-        if (cls2->get_exp_case() == CONST_ID) {
-            code += cls2->get_value();
-        }
-        else {
-            code += cls2->get_reg();
-        }
+        code += size_by_type(type) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
         truelist = CodeBuffer::merge(cls1->get_truelist(), cls2->get_truelist());
         falselist = CodeBuffer::merge(cls1->get_falselist(), cls2->get_falselist());
@@ -184,15 +181,10 @@ ExpCls::ExpCls(std::string type,
         }
     }
     else if (op == EXP_TO_NUM) {
-        code = "    " + reg.get_name() + " = add i32 " + value + ", 0";
-        code_buffer.emit(code);
+        code_buffer.emit("    " + reg.get_name() + " = add i32 " + value + ", 0");
     }
     else if (op == EXP_TO_NUM_B) {
-        Register temp_reg;
-        code = "    " + temp_reg.get_name() + " = zext i8 " + value + " to i32";
-        code_buffer.emit(code);
-        code = "    " + reg.get_name() + " = add i32 " + temp_reg.get_name() + ", 0";
-        code_buffer.emit(code);
+        code_buffer.emit("    " + reg.get_name() + " = add i8 " + value + ", 0");
     }
     else if (op == EXP_TO_STRING) {
         global_code = "@." + cls1->get_str_gen_name() + " = internal constant [" + cls1->get_size() + " x i8] c\"" + cls1->get_value() + "\\00\"";
