@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include "Tables.h"
+#define TAB std::string("\t")
+#define DOUBLE_TAB std::string("\t\t")
 
 
 extern SymbolTableStack symbol_table_stack;

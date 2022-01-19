@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include "Utilities.h"
 using namespace std;
 
 bool replace(string& str, const string& from, const string& to, const BranchLabelIndex index);
@@ -19,7 +20,7 @@ string CodeBuffer::genLabel(){
 	label << buffer.size();
 	std::string ret(label.str());
 	label << ":";
-	emit(label.str());
+	emit(TAB + label.str());
 	return ret;
 }
 
@@ -37,7 +38,7 @@ void CodeBuffer::bpatch(const vector<pair<int,BranchLabelIndex>>& address_list, 
 }
 
 void CodeBuffer::printCodeBuffer(){
-	for (std::vector<string>::const_iterator it = buffer.begin(); it != buffer.end(); ++it) 
+	for (std::vector<string>::const_iterator it = buffer.begin(); it != buffer.end(); ++it)
 	{
 		cout << *it << endl;
     }
@@ -58,7 +59,7 @@ vector<pair<int,BranchLabelIndex>> CodeBuffer::merge(const vector<pair<int,Branc
 }
 
 // ******** Methods to handle the global section ********** //
-void CodeBuffer::emitGlobal(const std::string& dataLine) 
+void CodeBuffer::emitGlobal(const std::string& dataLine)
 {
 	globalDefs.push_back(dataLine);
 }
@@ -85,4 +86,3 @@ bool replace(string& str, const string& from, const string& to, const BranchLabe
     str.replace(pos, from.length(), to);
     return true;
 }
-

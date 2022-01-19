@@ -320,10 +320,10 @@ void declare_divion_error_str() {
 
 void emit_default_return(std::string ret_type) {
 	if (ret_type == "VOID") {
-		code_buffer.emit("	ret void");
+		code_buffer.emit(DOUBLE_TAB + "ret void");
 	}
 	else {
-		code_buffer.emit("	ret " + size_by_type(ret_type) + " 0");
+		code_buffer.emit(DOUBLE_TAB + "ret " + size_by_type(ret_type) + " 0");
 	}
 	code_buffer.emit("}");
 }
