@@ -16,6 +16,7 @@ enum OPERATION_TYPE {
     EXP_TO_EXP_BINOP_MUL_EXP,
     EXP_TO_EXP_BINOP_ADD_EXP,
     EXP_TO_ID,
+    EXP_TO_CALL,
     EXP_TO_NUM,
     EXP_TO_NUM_B,
     EXP_TO_STRING,
@@ -36,7 +37,12 @@ enum OPERATION_TYPE {
     STATEMENTS_TO_STATEMENT,
     STATEMENTS_TO_STATEMENTS_STATEMENT,
     STATEMENT_TO_CONTINUE,
-    STATEMENT_TO_BREAK
+    STATEMENT_TO_BREAK,
+    STATEMENT_TO_RET,
+    STATEMENT_TO_RET_EXP,
+    STATEMENT_TO_CALL,
+    CALL_TO_ID,
+    CALL_TO_ID_EXPLIST
 };
 
 
@@ -68,6 +74,7 @@ public:
   virtual bool get_is_empty() { std::cerr << "17 Unexpected error" << std::endl; exit(1); return true; }
   virtual std::vector<pair<int,BranchLabelIndex>> get_continue_list() { std::cerr << "18 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
   virtual std::vector<pair<int,BranchLabelIndex>> get_break_list() { std::cerr << "19 Unexpected error" << std::endl; exit(1); return std::vector<pair<int,BranchLabelIndex>>(); }
+  virtual std::vector<std::string> get_vals() { std::cerr << "20 Unexpected error" << std::endl; exit(1); return std::vector<std::string>(); }
   virtual ~AbsCls() = default;
 };
 
@@ -178,19 +185,23 @@ public:
 class CallCls : public AbsCls {
 private:
 	std::string type;
+    Register reg;
 public:
-	CallCls(std::string type);
+	CallCls(std::string type, OPERATION_TYPE op = NONE, AbsCls* cls1 = nullptr, AbsCls* cls2 = nullptr);
 	std::string get_type() override { return type; }
+    std::string get_reg() override { return reg.get_name(); }
 };
 
 
 class ExpListCls : public AbsCls {
 private:
   std::vector<std::string> args_types;
+  std::vector<std::string> vals;
 public:
   ExpListCls() = default;
-  ExpListCls(std::vector<std::string> args_types);
+  ExpListCls(std::vector<std::string> args_types, std::vector<std::string> vals);
   std::vector<std::string> get_args_types() override { return args_types; }
+  std::vector<std::string> get_vals() override { return vals; }
   void add_new_func_arg(AbsCls*) override;
 };
 

@@ -125,13 +125,14 @@ Statement										:	LBRACE
 													{check_var_valid_for_assign($1->get_name()); std::string& id_type = get_id_type($1->get_name()); check_valid_types_for_assign(id_type, $3->get_type()); $$ = new StatementCls(STATEMENT_TO_ID_EXP, $1, $3);}
 												|	Call
 													SC
+													{$$ = new StatementCls(STATEMENT_TO_CALL);}
 												|	RETURN
 													SC
-													{check_valid_ret_type("VOID");}
+													{check_valid_ret_type("VOID"); emit_explicit_return(); $$ = new StatementCls(STATEMENT_TO_RET);}
 												|	RETURN
 													Exp
 													SC
-													{assert_not_void($2->get_type()); check_valid_ret_type($2->get_type());}
+													{assert_not_void($2->get_type()); check_valid_ret_type($2->get_type()); emit_explicit_return($2); $$ = new StatementCls(STATEMENT_TO_RET_EXP);}
 												|	IF
 													{open_scope();}
 													LPAREN
@@ -178,11 +179,11 @@ Call											:	ID
 													LPAREN
 													ExpList
 													RPAREN
-													{std::string& func_ret_type = check_valid_func_call($1->get_name(), $3->get_args_types()); $$ = new CallCls(func_ret_type);}
+													{std::string& func_ret_type = check_valid_func_call($1->get_name(), $3->get_args_types()); $$ = new CallCls(func_ret_type, CALL_TO_ID_EXPLIST, $1, $3);}
 												|	ID
 													LPAREN
 													RPAREN
-													{std::string& func_ret_type = check_valid_func_call($1->get_name()); $$ = new CallCls(func_ret_type);}
+													{std::string& func_ret_type = check_valid_func_call($1->get_name()); $$ = new CallCls(func_ret_type, CALL_TO_ID, $1);}
 ;
 
 ExpList											:	Exp
@@ -190,7 +191,7 @@ ExpList											:	Exp
 												|	Exp
 													COMMA
 													ExpList
-													{$$ = new ExpListCls($3->get_args_types()); $$->add_new_func_arg($1);}
+													{$$ = new ExpListCls($3->get_args_types(), $3->get_vals()); $$->add_new_func_arg($1);}
 ;
 
 Type											:	INT
@@ -222,7 +223,7 @@ Exp												:	LPAREN
 												|	ID
 													{$$ = new ExpCls(get_id_type($1->get_name()), std::string("0"), REGULAR, EXP_TO_ID, $1);}
 												|	Call
-													{$$ = new ExpCls($1->get_type());}					// TODO - we are afraid
+													{$$ = new ExpCls($1->get_type(), std::string("0"), REGULAR, EXP_TO_CALL, $1);}
 												|	NUM
 													{$$ = new ExpCls("INT", $1->get_value(), SIMPLE_NUM, EXP_TO_NUM);}
 												|	NUM

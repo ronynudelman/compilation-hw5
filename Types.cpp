@@ -190,6 +190,9 @@ ExpCls::ExpCls(std::string type,
             falselist = CodeBuffer::makelist(list_item);
         }
     }
+    else if (op == EXP_TO_CALL) {
+        code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(cls1->get_type()) + " " + cls1->get_reg() + ", 0");
+    }
     else if (op == EXP_TO_NUM) {
         code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add i32 " + value + ", 0");
     }
@@ -324,14 +327,60 @@ ExpCls::ExpCls(std::string type,
 }
 
 
-CallCls::CallCls(std::string type) : type(type) {}
+CallCls::CallCls(std::string type, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2) : type(type), reg(Register()) {
+    if (op == CALL_TO_ID) {
+        if (type == "VOID") {
+            code_buffer.emit(DOUBLE_TAB + "call " + size_by_type(type) + " @" + cls1->get_name() + "()");
+        }
+        else {
+            code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = call " + size_by_type(type) + " @" + cls1->get_name() + "()");
+        }
+    }
+    else if (op == CALL_TO_ID_EXPLIST) {
+        std::vector<std::string> func_args_sizes = symbol_table_stack.get_entry_by_name(cls1->get_name())->get_arguments();
+        std::string code;
+        if (type == "VOID") {
+            code = DOUBLE_TAB + "call " + size_by_type(type) + " @" + cls1->get_name() + "(";
+        }
+        else {
+            code = DOUBLE_TAB + reg.get_name() + " = call " + size_by_type(type) + " @" + cls1->get_name() + "(";
+        }
+        size_t i = cls2->get_vals().size() - 1;
+        while (true) {
+            if (size_by_type(cls2->get_args_types()[i]) != size_by_type(func_args_sizes[i])) {
+                Register ext_reg;
+                code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = zext i8 " + cls2->get_vals()[i] + " to i32");
+                code += size_by_type(func_args_sizes[i]) + " " + ext_reg.get_name() + ", ";
+            }
+            else {
+                code += size_by_type(func_args_sizes[i]) + " " + cls2->get_vals()[i] + ", ";
+            }
+            if (i == 0) {
+                break;
+            }
+            i--;
+        }
+        code_buffer.emit(code.substr(0, code.size() - 2) + ")");
+    }
+    else {
+        std::cerr << "CALL OPERATION_TYPE ERROR!" << std::endl;
+    }
+}
 
 
-ExpListCls::ExpListCls(std::vector<std::string> args_types) : args_types(args_types) {}
+ExpListCls::ExpListCls(std::vector<std::string> args_types,
+                       std::vector<std::string> vals) : args_types(args_types),
+                                                        vals(vals) {}
 
 
-void ExpListCls::add_new_func_arg(AbsCls* exp_new_type) {
-  args_types.push_back(exp_new_type->get_type());
+void ExpListCls::add_new_func_arg(AbsCls* exp) {
+  args_types.push_back(exp->get_type());
+  if (exp->get_exp_case() == CONST_ID) {
+      vals.push_back(exp->get_value());
+  }
+  else {
+      vals.push_back(exp->get_reg());
+  }
 }
 
 
@@ -519,7 +568,7 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         code_buffer.bpatch(cls5->get_continue_list(), cls2->get_label());
         code_buffer.bpatch(cls5->get_break_list(), final_label);
     }
-    else if (op == STATEMENT_TO_CONTINUE){
+    else if (op == STATEMENT_TO_CONTINUE) {
         int br_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
         code_buffer.genLabel();
         pair<int,BranchLabelIndex> continue_branch;
@@ -527,13 +576,22 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         continue_branch.second = FIRST;
         continue_list = CodeBuffer::makelist(continue_branch);
     }
-    else if (op == STATEMENT_TO_BREAK){
+    else if (op == STATEMENT_TO_BREAK) {
         int br_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
         code_buffer.genLabel();
         pair<int,BranchLabelIndex> break_branch;
         break_branch.first = br_addr;
         break_branch.second = FIRST;
         break_list = CodeBuffer::makelist(break_branch);
+    }
+    else if (op == STATEMENT_TO_RET) {
+        // Do nothing
+    }
+    else if (op == STATEMENT_TO_RET_EXP) {
+        // Do nothing
+    }
+    else if (op == STATEMENT_TO_CALL) {
+        // Do nothing
     }
     else {
         std::cerr << "STATEMENT OPERATION_TYPE ERROR!" << std::endl;

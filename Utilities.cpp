@@ -329,8 +329,19 @@ void emit_default_return(std::string ret_type) {
 }
 
 
+void emit_explicit_return(AbsCls* exp) {
+	if (exp) {
+		std::string ret_val = exp->get_exp_case() == CONST_ID ? exp->get_value() : exp->get_reg();
+		code_buffer.emit(DOUBLE_TAB + "ret " + size_by_type(exp->get_type()) + " " + ret_val);
+	}
+	else {
+		code_buffer.emit(DOUBLE_TAB + "ret void");
+	}
+	code_buffer.genLabel();
+}
+
+
 void emit_define_function(std::string ret_type, std::string func_name, std::vector<std::string> args_types) {
-	//define i32 @main() {   ; i32()*
 	std::string code;
 	code = "define " + size_by_type(ret_type) + " @" + func_name + "(";
 	for (std::vector<std::string>::iterator it = args_types.begin(); it != args_types.end(); ++it) {
