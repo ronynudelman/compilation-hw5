@@ -159,8 +159,8 @@ ExpCls::ExpCls(std::string type,
         }
         else {
             Register addr_calc_reg;
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code_buffer.emit(DOUBLE_TAB + addr_calc_reg.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name());
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code_buffer.emit(DOUBLE_TAB + addr_calc_reg.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
             if (size_by_type(type) != "i32") {
                 Register ext_reg;
                 code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
@@ -374,10 +374,9 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     }
     else if (op == STATEMENT_TO_TYPE_ID) {
         const_table.remove(cls1->get_name());
-        code = DOUBLE_TAB + reg1.get_name() + " = alloca i32";
-        code_buffer.emit(code);
-        code = DOUBLE_TAB + "store i32 0, i32* " + reg1.get_name();
-        code_buffer.emit(code);
+        std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+        code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
+        code_buffer.emit(DOUBLE_TAB + "store i32 0, i32* " + reg1.get_name());
     }
     else if (op == STATEMENT_TO_TYPE_ID_EXP) {
         if (cls1->get_is_const() && cls3->get_exp_case() == SIMPLE_NUM) {
@@ -408,15 +407,14 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
                 std::string final_label = code_buffer.genLabel();
                 code_buffer.bpatch(branches_to_patch, final_label);
 
-                code = DOUBLE_TAB + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]";
-                code_buffer.emit(code);
-                code = DOUBLE_TAB + reg2.get_name() + " = alloca i32";
-                code_buffer.emit(code);
-                code = DOUBLE_TAB + "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
-                code_buffer.emit(code);
+                code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]");
+                std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls2->get_name()))->get_offset());
+                code_buffer.emit(DOUBLE_TAB + reg2.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
+                code_buffer.emit(DOUBLE_TAB + "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name());
             }
             else {
-                code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = alloca i32");
+                std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls2->get_name()))->get_offset());
+                code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
                 std::string operand_val = cls3->get_exp_case() == CONST_ID ? cls3->get_value() : cls3->get_reg();
                 // check if we need to extent the register
                 if (size_by_type(cls3->get_type()) != "i32" && cls3->get_exp_case() != CONST_ID) {
@@ -452,17 +450,15 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             std::string final_label = code_buffer.genLabel();
             code_buffer.bpatch(branches_to_patch, final_label);
 
-            code = DOUBLE_TAB + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]";
-            code_buffer.emit(code);
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = DOUBLE_TAB + reg2.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-            code_buffer.emit(code);
-            code = DOUBLE_TAB + "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name();
-            code_buffer.emit(code);
+            code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]");
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code_buffer.emit(DOUBLE_TAB + reg2.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
+            code_buffer.emit(DOUBLE_TAB + "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name());
         }
         else {
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name());
+            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
+            code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
+
             std::string operand_val = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
             // check if we need to extent the register
             if (size_by_type(cls2->get_type()) != "i32" && cls2->get_exp_case() != CONST_ID) {

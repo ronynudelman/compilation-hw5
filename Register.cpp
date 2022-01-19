@@ -3,6 +3,7 @@
 
 unsigned int Register::counter = 0;
 unsigned int LocalVarsReg::counter = 0;
+std::string LocalVarsReg::name = std::string();
 
 
 Register::Register() : name(std::string()) {
@@ -16,11 +17,12 @@ std::string Register::get_name() {
 }
 
 
-
-LocalVarsReg::LocalVarsReg() : name(std::string()) {
+std::string LocalVarsReg::update() {
     name = std::string("%loc_var") + std::to_string(counter);
     counter++;
+    return name;
 }
+
 
 std::string LocalVarsReg::get_name() {
     return name;

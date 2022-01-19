@@ -16,11 +16,13 @@ public:
 
 class LocalVarsReg {
 private:
-    std::string name;
-public:
-    LocalVarsReg();
-    std::string get_name();
     static unsigned int counter;
+    static std::string name;
+public:
+    LocalVarsReg() = default;
+    std::string update();
+    std::string get_name();
 };
+
 
 #endif // _REGISTER_H_

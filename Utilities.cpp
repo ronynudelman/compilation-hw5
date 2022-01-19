@@ -342,3 +342,8 @@ void emit_define_function(std::string ret_type, std::string func_name, std::vect
 	code += ") {";
 	code_buffer.emit(code);
 }
+
+
+void emit_allocate_stack() {
+	code_buffer.emit(DOUBLE_TAB + local_vars_reg.update() + " = alloca [50 x i32]");
+}

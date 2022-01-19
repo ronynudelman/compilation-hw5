@@ -44,5 +44,6 @@ void declare_standart_functions();
 void declare_divion_error_str();
 void emit_default_return(std::string ret_type);
 void emit_define_function(std::string ret_type, std::string func_name, std::vector<std::string> args_types);
+void emit_allocate_stack();
 
 #endif // UTILITIES_H_
