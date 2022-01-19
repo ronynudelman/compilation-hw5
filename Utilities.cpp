@@ -347,3 +347,10 @@ void emit_define_function(std::string ret_type, std::string func_name, std::vect
 void emit_allocate_stack() {
 	code_buffer.emit(DOUBLE_TAB + local_vars_reg.update() + " = alloca [50 x i32]");
 }
+
+
+void remove_args_from_const_table(std::vector<std::string> args_names) {
+	for (std::vector<std::string>::iterator it = args_names.begin(); it != args_names.end(); ++it) {
+		const_table.remove(*it);
+	}
+}

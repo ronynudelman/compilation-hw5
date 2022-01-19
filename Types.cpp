@@ -159,15 +159,22 @@ ExpCls::ExpCls(std::string type,
         }
         else {
             Register addr_calc_reg;
-            std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset());
-            code_buffer.emit(DOUBLE_TAB + addr_calc_reg.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
-            if (size_by_type(type) != "i32") {
-                Register ext_reg;
-                code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
-                code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = trunc i32 " + ext_reg.get_name() + " to " + size_by_type(type));
+            int id_offset = (symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset();
+            if (id_offset >= 0) { // local val case
+                std::string id_offset_str = std::to_string(id_offset);
+                code_buffer.emit(DOUBLE_TAB + addr_calc_reg.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset_str);
+                if (size_by_type(type) != "i32") {
+                    Register ext_reg;
+                    code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+                    code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = trunc i32 " + ext_reg.get_name() + " to " + size_by_type(type));
+                }
+                else {
+                    code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+                }
             }
-            else {
-                code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+            else { // argument case
+                std::string arg_index = std::to_string((-1 * id_offset) - 1);
+                code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " %" + arg_index + ", 0");
             }
         }
         if (type.find("BOOL") != std::string::npos) {

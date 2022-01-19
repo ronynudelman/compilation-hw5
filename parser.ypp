@@ -60,7 +60,7 @@ FuncDecl										:	RetType
 													LPAREN
 													Formals
 													RPAREN
-													{add_func_to_symbol_table($2->get_name(), $1->get_name(), $4->get_args_types(), $2->get_yylineno()); emit_define_function($1->get_name(), $2->get_name(), $4->get_args_types()); emit_allocate_stack();}
+													{add_func_to_symbol_table($2->get_name(), $1->get_name(), $4->get_args_types(), $2->get_yylineno()); emit_define_function($1->get_name(), $2->get_name(), $4->get_args_types()); emit_allocate_stack(); remove_args_from_const_table($4->get_args_names());}
 													LBRACE
 													{open_scope(); add_func_args_to_symbol_table($4->get_args_types(), $4->get_args_names());}
 													Statements
