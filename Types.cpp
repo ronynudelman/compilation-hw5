@@ -416,15 +416,15 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
                 code_buffer.emit(code);
             }
             else {
-                code = DOUBLE_TAB + reg1.get_name() + " = alloca i32";
-                code_buffer.emit(code);
-                if (cls3->get_exp_case() == CONST_ID) {
-                    code = DOUBLE_TAB + "store i32 " + cls3->get_value() + ", i32* " + reg1.get_name();
+                code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = alloca i32");
+                std::string operand_val = cls3->get_exp_case() == CONST_ID ? cls3->get_value() : cls3->get_reg();
+                // check if we need to extent the register
+                if (size_by_type(cls3->get_type()) != "i32" && cls3->get_exp_case() != CONST_ID) {
+                    Register ext_reg;
+                    code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = zext " + size_by_type(cls3->get_type()) + " " + operand_val + " to i32");
+                    operand_val = ext_reg.get_name();
                 }
-                else {
-                    code = DOUBLE_TAB + "store i32 " + cls3->get_reg() + ", i32* " + reg1.get_name();
-                }
-                code_buffer.emit(code);
+                code_buffer.emit(DOUBLE_TAB + "store i32 " + operand_val + ", i32* " + reg1.get_name());
             }
         }
     }
@@ -462,22 +462,18 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
         else {
             std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset() * 4);
-            code = DOUBLE_TAB + reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name();
-            code_buffer.emit(code);
-            if (cls2->get_exp_case() == CONST_ID) {
-                code = DOUBLE_TAB + "store i32 " + cls2->get_value() + ", i32* " + reg1.get_name();
+            code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = add i32 " + id_offset + ", " + local_vars_reg.get_name());
+            std::string operand_val = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+            // check if we need to extent the register
+            if (size_by_type(cls2->get_type()) != "i32" && cls2->get_exp_case() != CONST_ID) {
+                Register ext_reg;
+                code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = zext " + size_by_type(cls2->get_type()) + " " + operand_val + " to i32");
+                operand_val = ext_reg.get_name();
             }
-            else {
-                code = DOUBLE_TAB + "store i32 " + cls2->get_reg() + ", i32* " + reg1.get_name();
-            }
-            code_buffer.emit(code);
+            code_buffer.emit(DOUBLE_TAB + "store i32 " + operand_val + ", i32* " + reg1.get_name());
         }
     }
     else if (op == STATEMETN_TO_IF) {
-        //     Exp 1
-        //     M 2
-        //     Statement 3
-        //     IfElse 4
         if (cls4->get_is_empty()) {
             code_buffer.bpatch(cls1->get_truelist(), cls2->get_label());
             nextlist = CodeBuffer::merge(cls1->get_falselist(), cls3->get_nextlist());
@@ -511,11 +507,6 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         }
     }
     else if (op == STATEMENT_TO_WHILE) {
-        // N - 1
-        // M - 2
-        // Exp - 3
-        // M - 4
-        // Statement - 5
         code_buffer.bpatch(cls1->get_nextlist(), cls2->get_label());
         code_buffer.bpatch(cls3->get_truelist(), cls4->get_label());
         nextlist = cls3->get_falselist();
