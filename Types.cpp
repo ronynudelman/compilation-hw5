@@ -366,7 +366,11 @@ CallCls::CallCls(std::string type, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2
         }
     }
     else if (op == CALL_TO_ID_EXPLIST) {
-        std::vector<std::string> func_args_sizes = symbol_table_stack.get_entry_by_name(cls1->get_name())->get_arguments();
+        std::vector<std::string> func_args_sizes_reverse = symbol_table_stack.get_entry_by_name(cls1->get_name())->get_arguments();
+        std::vector<std::string> func_args_sizes;
+        for (std::vector<std::string>::reverse_iterator it = func_args_sizes_reverse.rbegin(); it != func_args_sizes_reverse.rend(); ++it) {
+    		func_args_sizes.push_back(*it);
+        }
         std::string code;
         if (type == "VOID") {
             code = DOUBLE_TAB + "call " + size_by_type(type) + " @" + cls1->get_name() + "(";
@@ -400,32 +404,7 @@ CallCls::CallCls(std::string type, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2
 ExpListCls::ExpListCls(AbsCls* exp,
                        std::vector<std::string> args_types,
                        std::vector<std::string> vals) : args_types(args_types),
-                                                        vals(vals)
-{
-    if (exp->get_type().find("BOOL") != std::string::npos) {
-        std::string true_label = code_buffer.genLabel();
-        code_buffer.bpatch(exp->get_truelist(), true_label);
-        int true_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
-        pair<int,BranchLabelIndex> true_label_pair;
-        true_label_pair.first = true_label_addr;
-        true_label_pair.second = FIRST;
-
-        std::string false_label = code_buffer.genLabel();
-        code_buffer.bpatch(exp->get_falselist(), false_label);
-        int false_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
-        pair<int,BranchLabelIndex> false_label_pair;
-        false_label_pair.first = false_label_addr;
-        false_label_pair.second = FIRST;
-
-        vector<pair<int,BranchLabelIndex>> branches_to_patch;
-        branches_to_patch.push_back(true_label_pair);
-        branches_to_patch.push_back(false_label_pair);
-        std::string final_label = code_buffer.genLabel();
-        code_buffer.bpatch(branches_to_patch, final_label);
-
-        code_buffer.emit(DOUBLE_TAB + exp->get_reg() + " = phi i1 [1, %" + true_label + "], [0, %" + false_label + "]");
-    }
-}
+                                                        vals(vals) {}
 
 
 void ExpListCls::add_new_func_arg(AbsCls* exp) {
