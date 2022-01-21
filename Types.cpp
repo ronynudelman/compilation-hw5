@@ -401,8 +401,7 @@ CallCls::CallCls(std::string type, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2
 }
 
 
-ExpListCls::ExpListCls(AbsCls* exp,
-                       std::vector<std::string> args_types,
+ExpListCls::ExpListCls(std::vector<std::string> args_types,
                        std::vector<std::string> vals) : args_types(args_types),
                                                         vals(vals) {}
 

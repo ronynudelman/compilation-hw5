@@ -187,13 +187,12 @@ Call											:	ID
 ;
 													//EXPLIST
 ExpList											:	Exp
-													{handle_exp_in_explist($1); $$ = new ExpListCls($1); $$->add_new_func_arg($1);}
+													{handle_exp_in_explist($1); $$ = new ExpListCls(); $$->add_new_func_arg($1);}
 												|	Exp
-												//	{if ($1->get_type().find("BOOL") != std::string::npos) code_buffer.genLabel();}
 													{handle_exp_in_explist($1);}
 													COMMA
 													ExpList
-													{$$ = new ExpListCls($1, $4->get_args_types(), $4->get_vals()); $$->add_new_func_arg($1);}
+													{$$ = new ExpListCls($4->get_args_types(), $4->get_vals()); $$->add_new_func_arg($1);}
 ;
 
 Type											:	INT

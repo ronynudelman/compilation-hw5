@@ -198,7 +198,7 @@ private:
   std::vector<std::string> args_types;
   std::vector<std::string> vals;
 public:
-  ExpListCls(AbsCls* exp, std::vector<std::string> args_types = std::vector<std::string>(), std::vector<std::string> vals = std::vector<std::string>());
+  ExpListCls(std::vector<std::string> args_types = std::vector<std::string>(), std::vector<std::string> vals = std::vector<std::string>());
   std::vector<std::string> get_args_types() override { return args_types; }
   std::vector<std::string> get_vals() override { return vals; }
   void add_new_func_arg(AbsCls*) override;
