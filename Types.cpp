@@ -101,12 +101,17 @@ ExpCls::ExpCls(std::string type,
             code_buffer.emit(DOUBLE_TAB + div_error_reg.get_name() + " = getelementptr [23 x i8], [23 x i8]* @.div_error, i32 0, i32 0");
             code_buffer.emit(DOUBLE_TAB + "call void @print(i8* " + div_error_reg.get_name() + ")"); //TODO: should we insert lables after these calls?
             code_buffer.emit(DOUBLE_TAB + "call void @exit(i32 0)"); //TODO: which return value should we send to exit.
+            int div_err_br_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
             std::string false_label = code_buffer.genLabel();
             pair<int,BranchLabelIndex> new_pair;
             new_pair.first = br_addr;
             new_pair.second = FIRST;
             code_buffer.bpatch(CodeBuffer::makelist(new_pair), true_label);
             new_pair.second = SECOND;
+            code_buffer.bpatch(CodeBuffer::makelist(new_pair), false_label);
+            //bpatching the branch after call exit
+            new_pair.first = div_err_br_addr;
+            new_pair.second = FIRST;
             code_buffer.bpatch(CodeBuffer::makelist(new_pair), false_label);
             //the actual division.
             code = DOUBLE_TAB + reg.get_name() + " = ";
@@ -203,7 +208,7 @@ ExpCls::ExpCls(std::string type,
     }
     else if (op == EXP_TO_STRING) {
         global_code = "@." + cls1->get_str_gen_name() + " = internal constant [" + cls1->get_size() + " x i8] c\"" + cls1->get_value() + "\\00\"";
-        code = DOUBLE_TAB + reg.get_name() + " = getelementptr ([" + cls1->get_size() + " x i8], [" + cls1->get_size() + " x i8]* @." + cls1->get_str_gen_name() + ", i32 0, i32 0)";
+        code = DOUBLE_TAB + reg.get_name() + " = getelementptr [" + cls1->get_size() + " x i8], [" + cls1->get_size() + " x i8]* @." + cls1->get_str_gen_name() + ", i32 0, i32 0";
         code_buffer.emitGlobal(global_code);
         code_buffer.emit(code);
     }

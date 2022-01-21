@@ -58,6 +58,9 @@ std::string size_by_type(std::string type) {
 	else if (type.find("BYTE") != std::string::npos) {
 		return "i8";
 	}
+	else if (type.find("STRING") != std::string::npos) {
+		return "i8*";
+	}
 	else {
 		return "void";
 	}
