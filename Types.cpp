@@ -74,6 +74,7 @@ ExpCls::ExpCls(std::string type,
         // the operands will be the actual strings in the mul/div command
         std::string operand_1 = cls1->get_exp_case() == CONST_ID ? cls1->get_value() : cls1->get_reg();
         std::string operand_2 = cls2->get_exp_case() == CONST_ID ? cls2->get_value() : cls2->get_reg();
+        std::string operand_2_size = size_by_type(cls2->get_type());
         // check if we need to extent one of the registers
         if (size_by_type(cls1->get_type()) != size_by_type(cls2->get_type())) {
             if (size_by_type(cls1->get_type()) == "i8" && cls1->get_exp_case() != CONST_ID) {
@@ -85,6 +86,7 @@ ExpCls::ExpCls(std::string type,
                 Register ext_reg;
                 code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = zext i8 " + operand_2 + " to i32");
                 operand_2 = ext_reg.get_name();
+                operand_2_size = "i32";
             }
         }
         // prepare the mul/div commands
@@ -94,7 +96,7 @@ ExpCls::ExpCls(std::string type,
         else { // cls3->get_value() == "/"
             // checking division by 0.
             Register temp_reg;
-            code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq " + size_by_type(cls2->get_type()) + " " + operand_2 + ", 0");
+            code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq " + operand_2_size + " " + operand_2 + ", 0");
             int br_addr = code_buffer.emit(DOUBLE_TAB + "br i1 " + temp_reg.get_name() + ", label @, label @");
             std::string true_label = code_buffer.genLabel();
             Register div_error_reg;
