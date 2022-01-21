@@ -364,7 +364,7 @@ void emit_explicit_return(AbsCls* exp) {
 void emit_define_function(std::string ret_type, std::string func_name, std::vector<std::string> args_types) {
 	std::string code;
 	code = "define " + size_by_type(ret_type) + " @" + func_name + "(";
-	for (std::vector<std::string>::iterator it = args_types.begin(); it != args_types.end(); ++it) {
+	for (std::vector<std::string>::reverse_iterator  it = args_types.rbegin(); it != args_types.rend(); ++it) {
 		code += size_by_type((*it)) + ", ";
 	}
 	if (!args_types.empty()) {

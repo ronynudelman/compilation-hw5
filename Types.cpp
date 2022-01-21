@@ -59,13 +59,15 @@ ExpCls::ExpCls(std::string type,
     std::string code;
     std::string global_code;
     if (op == EXP_TO_LPAREN_EXP_RPAREN) {
-        if (cls1->get_exp_case() == CONST_ID) {
-            code = DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+        if (cls1->get_type().find("BOOL") == std::string::npos) {
+            if (cls1->get_exp_case() == CONST_ID) {
+                code = DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_value() + ", 0";
+            }
+            else {
+                code = DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
+            }
+            code_buffer.emit(code);
         }
-        else {
-            code = DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " " + cls1->get_reg() + ", 0";
-        }
-        code_buffer.emit(code);
         truelist = cls1->get_truelist();
         falselist = cls1->get_falselist();
         nextlist = cls1->get_nextlist();
@@ -167,6 +169,7 @@ ExpCls::ExpCls(std::string type,
             this->value = id_value;
         }
         else {
+            Register stack_value_reg;
             Register addr_calc_reg;
             int id_offset = (symbol_table_stack.get_entry_by_name(cls1->get_name()))->get_offset();
             if (id_offset >= 0) { // local val case
@@ -175,21 +178,39 @@ ExpCls::ExpCls(std::string type,
                 if (size_by_type(type) != "i32") {
                     Register ext_reg;
                     code_buffer.emit(DOUBLE_TAB + ext_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
-                    code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = trunc i32 " + ext_reg.get_name() + " to " + size_by_type(type));
+                    code_buffer.emit(DOUBLE_TAB + stack_value_reg.get_name() + " = trunc i32 " + ext_reg.get_name() + " to " + size_by_type(type));
                 }
                 else {
-                    code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
+                    code_buffer.emit(DOUBLE_TAB + stack_value_reg.get_name() + " = load i32, i32* " + addr_calc_reg.get_name());
                 }
             }
             else { // argument case
                 std::string arg_index = std::to_string((-1 * id_offset) - 1);
-                code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " %" + arg_index + ", 0");
+                code_buffer.emit(DOUBLE_TAB + stack_value_reg.get_name() + " = add " + size_by_type(type) + " %" + arg_index + ", 0");
+            }
+            if (type.find("BOOL") != std::string::npos) {
+                Register temp_reg;
+                code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq i1 " + stack_value_reg.get_name() + ", 1");
+                int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + temp_reg.get_name() + ", label @, label @");
+                pair<int, BranchLabelIndex> list_item;
+                list_item.first = emit_result;
+                list_item.second = FIRST;
+                truelist = CodeBuffer::makelist(list_item);
+                list_item.second = SECOND;
+                falselist = CodeBuffer::makelist(list_item);
+            }
+            else {
+                code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(type) + " " + stack_value_reg.get_name() + ", 0");
             }
         }
-        if (type.find("BOOL") != std::string::npos) {
-            std::string bool_var = id_value.empty() ? reg.get_name() : id_value;
+    }
+    else if (op == EXP_TO_CALL) {
+        if (type.find("BOOL") == std::string::npos) {
+            code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(cls1->get_type()) + " " + cls1->get_reg() + ", 0");
+        }
+        else {
             Register temp_reg;
-            code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq i1 " + bool_var + ", 1");
+            code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq i1 " + cls1->get_reg() + ", 1");
             int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + temp_reg.get_name() + ", label @, label @");
             pair<int, BranchLabelIndex> list_item;
             list_item.first = emit_result;
@@ -198,9 +219,6 @@ ExpCls::ExpCls(std::string type,
             list_item.second = SECOND;
             falselist = CodeBuffer::makelist(list_item);
         }
-    }
-    else if (op == EXP_TO_CALL) {
-        code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add " + size_by_type(cls1->get_type()) + " " + cls1->get_reg() + ", 0");
     }
     else if (op == EXP_TO_NUM) {
         code_buffer.emit(DOUBLE_TAB + reg.get_name() + " = add i32 " + value + ", 0");
@@ -259,7 +277,8 @@ ExpCls::ExpCls(std::string type,
                 operand_2 = ext_reg.get_name();
             }
         }
-        code = DOUBLE_TAB + reg.get_name() + " = icmp ";
+        Register cmp_result_reg;
+        code = DOUBLE_TAB + cmp_result_reg.get_name() + " = icmp ";
         if (cls3->get_value() == "<") {
             code += "slt ";
         }
@@ -274,7 +293,7 @@ ExpCls::ExpCls(std::string type,
         }
         code += size_by_type(handle_binop_exp(cls1->get_type(), cls2->get_type())) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
-        int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + reg.get_name() + ", label @, label @");
+        int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + cmp_result_reg.get_name() + ", label @, label @");
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -299,7 +318,8 @@ ExpCls::ExpCls(std::string type,
                 operand_2 = ext_reg.get_name();
             }
         }
-        code = DOUBLE_TAB + reg.get_name() + " = icmp ";
+        Register cmp_result_reg;
+        code = DOUBLE_TAB + cmp_result_reg.get_name() + " = icmp ";
         if (cls3->get_value() == "==") {
             code += "eq ";
         }
@@ -308,7 +328,7 @@ ExpCls::ExpCls(std::string type,
         }
         code += size_by_type(handle_binop_exp(cls1->get_type(), cls2->get_type())) + " " + operand_1 + ", " + operand_2;
         code_buffer.emit(code);
-        int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + reg.get_name() + ", label @, label @");
+        int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + cmp_result_reg.get_name() + ", label @, label @");
         pair<int, BranchLabelIndex> list_item;
         list_item.first = emit_result;
         list_item.second = FIRST;
@@ -377,9 +397,35 @@ CallCls::CallCls(std::string type, OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2
 }
 
 
-ExpListCls::ExpListCls(std::vector<std::string> args_types,
+ExpListCls::ExpListCls(AbsCls* exp,
+                       std::vector<std::string> args_types,
                        std::vector<std::string> vals) : args_types(args_types),
-                                                        vals(vals) {}
+                                                        vals(vals)
+{
+    if (exp->get_type().find("BOOL") != std::string::npos) {
+        std::string true_label = code_buffer.genLabel();
+        code_buffer.bpatch(exp->get_truelist(), true_label);
+        int true_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+        pair<int,BranchLabelIndex> true_label_pair;
+        true_label_pair.first = true_label_addr;
+        true_label_pair.second = FIRST;
+
+        std::string false_label = code_buffer.genLabel();
+        code_buffer.bpatch(exp->get_falselist(), false_label);
+        int false_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+        pair<int,BranchLabelIndex> false_label_pair;
+        false_label_pair.first = false_label_addr;
+        false_label_pair.second = FIRST;
+
+        vector<pair<int,BranchLabelIndex>> branches_to_patch;
+        branches_to_patch.push_back(true_label_pair);
+        branches_to_patch.push_back(false_label_pair);
+        std::string final_label = code_buffer.genLabel();
+        code_buffer.bpatch(branches_to_patch, final_label);
+
+        code_buffer.emit(DOUBLE_TAB + exp->get_reg() + " = phi i1 [1, %" + true_label + "], [0, %" + false_label + "]");
+    }
+}
 
 
 void ExpListCls::add_new_func_arg(AbsCls* exp) {
@@ -452,16 +498,14 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
             if (cls3->get_type().find("BOOL") != std::string::npos) {
                 std::string true_label = code_buffer.genLabel();
                 code_buffer.bpatch(cls3->get_truelist(), true_label);
-                code = DOUBLE_TAB + "br label @";
-                int true_label_addr = code_buffer.emit(code);
+                int true_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
                 pair<int,BranchLabelIndex> true_label_pair;
                 true_label_pair.first = true_label_addr;
                 true_label_pair.second = FIRST;
 
                 std::string false_label = code_buffer.genLabel();
                 code_buffer.bpatch(cls3->get_falselist(), false_label);
-                code = DOUBLE_TAB + "br label @";
-                int false_label_addr = code_buffer.emit(code);
+                int false_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
                 pair<int,BranchLabelIndex> false_label_pair;
                 false_label_pair.first = false_label_addr;
                 false_label_pair.second = FIRST;
@@ -597,7 +641,30 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
         // Do nothing
     }
     else if (op == STATEMENT_TO_RET_EXP) {
-        // Do nothing
+        if (cls1->get_type().find("BOOL") != std::string::npos) {
+            std::string true_label = code_buffer.genLabel();
+            code_buffer.bpatch(cls1->get_truelist(), true_label);
+            int true_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+            pair<int,BranchLabelIndex> true_label_pair;
+            true_label_pair.first = true_label_addr;
+            true_label_pair.second = FIRST;
+
+            std::string false_label = code_buffer.genLabel();
+            code_buffer.bpatch(cls1->get_falselist(), false_label);
+            int false_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+            pair<int,BranchLabelIndex> false_label_pair;
+            false_label_pair.first = false_label_addr;
+            false_label_pair.second = FIRST;
+
+            vector<pair<int,BranchLabelIndex>> branches_to_patch;
+            branches_to_patch.push_back(true_label_pair);
+            branches_to_patch.push_back(false_label_pair);
+            std::string final_label = code_buffer.genLabel();
+            code_buffer.bpatch(branches_to_patch, final_label);
+
+            code_buffer.emit(DOUBLE_TAB + cls1->get_reg() + " = phi i1 [1, %" + true_label + "], [0, %" + false_label + "]");
+        }
+        emit_explicit_return(cls1);
     }
     else if (op == STATEMENT_TO_CALL) {
         // Do nothing

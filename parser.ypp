@@ -132,7 +132,7 @@ Statement										:	LBRACE
 												|	RETURN
 													Exp
 													SC
-													{assert_not_void($2->get_type()); check_valid_ret_type($2->get_type()); emit_explicit_return($2); $$ = new StatementCls(STATEMENT_TO_RET_EXP);}
+													{assert_not_void($2->get_type()); check_valid_ret_type($2->get_type()); $$ = new StatementCls(STATEMENT_TO_RET_EXP, $2);}
 												|	IF
 													{open_scope();}
 													LPAREN
@@ -185,13 +185,13 @@ Call											:	ID
 													RPAREN
 													{std::string& func_ret_type = check_valid_func_call($1->get_name()); $$ = new CallCls(func_ret_type, CALL_TO_ID, $1);}
 ;
-
+													//EXPLIST
 ExpList											:	Exp
-													{$$ = new ExpListCls(); $$->add_new_func_arg($1);}
+													{$$ = new ExpListCls($1); $$->add_new_func_arg($1);}
 												|	Exp
 													COMMA
 													ExpList
-													{$$ = new ExpListCls($3->get_args_types(), $3->get_vals()); $$->add_new_func_arg($1);}
+													{$$ = new ExpListCls($1, $3->get_args_types(), $3->get_vals()); $$->add_new_func_arg($1);}
 ;
 
 Type											:	INT
