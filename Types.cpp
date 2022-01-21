@@ -97,8 +97,10 @@ ExpCls::ExpCls(std::string type,
             code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq " + size_by_type(cls2->get_type()) + " " + operand_2 + ", 0");
             int br_addr = code_buffer.emit(DOUBLE_TAB + "br i1 " + temp_reg.get_name() + ", label @, label @");
             std::string true_label = code_buffer.genLabel();
-            //TODO: here will come Call for print
-            code_buffer.emit(DOUBLE_TAB + "CALL PRINT AND THEN CALL EXIT - DIVISION BY 0!");
+            Register div_error_reg;
+            code_buffer.emit(DOUBLE_TAB + div_error_reg.get_name() + " = getelementptr [23 x i8], [23 x i8]* @.div_error, i32 0, i32 0");
+            code_buffer.emit(DOUBLE_TAB + "call void @print(i8* " + div_error_reg.get_name() + ")"); //TODO: should we insert lables after these calls?
+            code_buffer.emit(DOUBLE_TAB + "call void @exit(i32 0)"); //TODO: which return value should we send to exit.
             std::string false_label = code_buffer.genLabel();
             pair<int,BranchLabelIndex> new_pair;
             new_pair.first = br_addr;
@@ -395,7 +397,7 @@ BinopAddCls::BinopAddCls(std::string value) : value(value) {}
 
 StringCls::StringCls(std::string value) : str_gen(StringGen()), value(value), size(std::to_string(value.size())) {
     this->value = this->value.substr(1, this->value.size() - 2);
-    this->size = std::to_string(this->value.size());
+    this->size = std::to_string(this->value.size() + 1); // the +1 is to include the '/00' at the end of the string.
 }
 
 

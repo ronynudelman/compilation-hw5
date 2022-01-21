@@ -311,6 +311,22 @@ void check_byte_range(std::string value) {
 void declare_standart_functions() {
 	code_buffer.emitGlobal("declare i32 @printf(i8*, ...)");
 	code_buffer.emitGlobal("declare void @exit(i32)");
+	code_buffer.emitGlobal("@.int_specifier = constant [4 x i8] c\"%d\\0A\\00\"");
+	code_buffer.emitGlobal("@.str_specifier = constant [4 x i8] c\"%s\\0A\\00\"");
+
+	code_buffer.emit("define void @printi(i32) {");
+	code_buffer.emit(DOUBLE_TAB + "%spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0");
+	code_buffer.emit(DOUBLE_TAB + "call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)");
+	code_buffer.emit(DOUBLE_TAB + "ret void");
+	code_buffer.emit("}");
+	code_buffer.emit(""); //'New line'
+
+	code_buffer.emit("define void @print(i8*) {");
+	code_buffer.emit(DOUBLE_TAB + "%spec_ptr = getelementptr [4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0");
+	code_buffer.emit(DOUBLE_TAB + "call i32 (i8*, ...) @printf(i8* %spec_ptr, i8* %0)");
+	code_buffer.emit(DOUBLE_TAB + "ret void");
+	code_buffer.emit("}");
+	code_buffer.emit(""); //'New line'
 }
 
 void declare_divion_error_str() {
@@ -326,6 +342,7 @@ void emit_default_return(std::string ret_type) {
 		code_buffer.emit(DOUBLE_TAB + "ret " + size_by_type(ret_type) + " 0");
 	}
 	code_buffer.emit("}");
+	code_buffer.emit(""); //'New line'
 }
 
 
