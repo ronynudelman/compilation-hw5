@@ -6,7 +6,7 @@ makefileurl="https://webcourse.cs.technion.ac.il/fc159753hw_236360_202101/hw/WCF
 #	number of tests: 
 numtests=2
 #	command to execute test: 
-command="./hw3 < t\$i.in >& t\$i.res"
+command="./hw5 < t\$i.in >& t\$i.res"
 hostname="cscomp"
 tmpdir="selfcheck_tmp"
 if [ $( hostname ) != "$hostname" ]
@@ -71,7 +71,7 @@ if [ ! -f hw3_output.hpp ]
 fi
 
 wget --no-check-certificate "$makefileurl" &> /dev/null
-if [ ! -f Makefile ]
+if [ ! -f makefile ]
 	then
 		echo "Unable to download makefile!"
 		exit
@@ -79,7 +79,7 @@ fi
 
 make
 
-if [ ! -f hw3 ] 
+if [ ! -f hw5 ] 
 	then 
 	echo "Cannot build submission!" 
 	exit 
