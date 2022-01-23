@@ -233,9 +233,9 @@ Exp												:	LPAREN
 												|	STRING
 													{$$ = new ExpCls("STRING", $1->get_value(), REGULAR, EXP_TO_STRING, $1);}
 												|	TRUE
-													{$$ = new ExpCls("BOOL", std::string("1"), REGULAR, EXP_TO_TRUE);}
+													{$$ = new ExpCls("BOOL", std::string("1"), SIMPLE_NUM, EXP_TO_TRUE);}
 												|	FALSE
-													{$$ = new ExpCls("BOOL", std::string("0"), REGULAR, EXP_TO_FALSE);}
+													{$$ = new ExpCls("BOOL", std::string("0"), SIMPLE_NUM, EXP_TO_FALSE);}
 												|	NOT
 													Exp
 													{check_matching_types("BOOL", $2->get_type()); $$ = new ExpCls("BOOL", std::string("0"), REGULAR, EXP_TO_NOT_EXP, $2);}

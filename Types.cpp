@@ -167,6 +167,17 @@ ExpCls::ExpCls(std::string type,
         if (!id_value.empty()) {
             this->exp_case = CONST_ID;
             this->value = id_value;
+            if (type.find("BOOL") != std::string::npos) {
+                Register temp_reg;
+                code_buffer.emit(DOUBLE_TAB + temp_reg.get_name() + " = icmp eq i1 " + id_value + ", 1");
+                int emit_result = code_buffer.emit(DOUBLE_TAB + "br i1 " + temp_reg.get_name() + ", label @, label @");
+                pair<int, BranchLabelIndex> list_item;
+                list_item.first = emit_result;
+                list_item.second = FIRST;
+                truelist = CodeBuffer::makelist(list_item);
+                list_item.second = SECOND;
+                falselist = CodeBuffer::makelist(list_item);
+            }
         }
         else {
             Register stack_value_reg;
@@ -470,6 +481,32 @@ StatementCls::StatementCls(OPERATION_TYPE op, AbsCls* cls1, AbsCls* cls2,  AbsCl
     else if (op == STATEMENT_TO_TYPE_ID_EXP) {
         if (cls1->get_is_const() && cls3->get_exp_case() == SIMPLE_NUM) {
             const_table.update(cls2->get_name(), cls3->get_value());
+            if (cls3->get_type().find("BOOL") != std::string::npos) {
+                std::string true_label = code_buffer.genLabel();
+                code_buffer.bpatch(cls3->get_truelist(), true_label);
+                int true_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+                pair<int,BranchLabelIndex> true_label_pair;
+                true_label_pair.first = true_label_addr;
+                true_label_pair.second = FIRST;
+
+                std::string false_label = code_buffer.genLabel();
+                code_buffer.bpatch(cls3->get_falselist(), false_label);
+                int false_label_addr = code_buffer.emit(DOUBLE_TAB + "br label @");
+                pair<int,BranchLabelIndex> false_label_pair;
+                false_label_pair.first = false_label_addr;
+                false_label_pair.second = FIRST;
+
+                vector<pair<int,BranchLabelIndex>> branches_to_patch;
+                branches_to_patch.push_back(true_label_pair);
+                branches_to_patch.push_back(false_label_pair);
+                std::string final_label = code_buffer.genLabel();
+                code_buffer.bpatch(branches_to_patch, final_label);
+
+                code_buffer.emit(DOUBLE_TAB + reg1.get_name() + " = phi i32 [1, %" + true_label + "], [0, %" + false_label + "]");
+                std::string id_offset = std::to_string((symbol_table_stack.get_entry_by_name(cls2->get_name()))->get_offset());
+                code_buffer.emit(DOUBLE_TAB + reg2.get_name() + " = getelementptr [50 x i32], [50 x i32]* " + local_vars_reg.get_name() + ", i32 0, i32 " + id_offset);
+                // code_buffer.emit(DOUBLE_TAB + "store i32 " + reg1.get_name() + ", i32* " + reg2.get_name());
+            }
         }
         else {
             const_table.remove(cls2->get_name());
